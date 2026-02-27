@@ -2,6 +2,7 @@
 using BusinessLayer.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
+
 namespace HRMS_Backend.Controllers
 {
     [Route("api/[controller]")]
@@ -29,7 +30,9 @@ namespace HRMS_Backend.Controllers
         private readonly IPolicyCategoryService _policyCategoryService;
         private readonly IResignationService _resignationService;
         private readonly IEventService _Eventservice;
-        public MasterDataController(IEventService Eventservice,IResignationService resignationService,IPolicyCategoryService policyCategoryService,ILeaveStatusService leaveStatusService,IHolidayListService holidayListService, IWeekoffService weekoffService,IAttendanceStatusService attendanceStatusService, IExpenseCategoryService expenseCategoryservice,IDepartmentService service, IDesignationService designationService, IGenderService genderService,IadminService adminService, ILeaveTypeService leaveTypeService,  ILogger<MasterDataController> logger, IKpiCategoryService kpiCategoryService, IEmployeeMasterService employeeService, ICertificationTypeService certificationTypeService, IAssetStatusService assetStatusService, IBloodGroupService bloodGroupService, IHelpdeskCategoryAdminService helpdeskCategoryAdminService, IProjectStatusAdminService projectStatusAdminService, IPriorityService priorityService)
+        private readonly IEmploymentTypeService _employmentTypeService;
+        public MasterDataController(IEventService Eventservice,IResignationService resignationService,IPolicyCategoryService policyCategoryService,ILeaveStatusService leaveStatusService,IHolidayListService holidayListService, IWeekoffService weekoffService,IAttendanceStatusService attendanceStatusService, IExpenseCategoryService expenseCategoryservice,IDepartmentService service, IDesignationService designationService, IGenderService genderService,IadminService adminService, ILeaveTypeService leaveTypeService,  ILogger<MasterDataController> logger, IKpiCategoryService kpiCategoryService, IEmployeeMasterService employeeService, ICertificationTypeService certificationTypeService, IAssetStatusService assetStatusService, IBloodGroupService bloodGroupService, IHelpdeskCategoryAdminService helpdeskCategoryAdminService, IProjectStatusAdminService projectStatusAdminService,
+            IPriorityService priorityService, IEmploymentTypeService employmentTypeService)
         {
             _service = service;
             _Eventservice = Eventservice;
@@ -53,7 +56,39 @@ namespace HRMS_Backend.Controllers
             _leaveStatusService = leaveStatusService;
             _policyCategoryService = policyCategoryService;
             _resignationService = resignationService;
+            _employmentTypeService = employmentTypeService;
         }
+        #region EmploymentType
+
+        [HttpGet("employment-type")]
+        public async Task<IActionResult> GetEmploymentTypes([FromQuery] int userId)
+        {
+            var result = await _employmentTypeService.GetAll(userId);
+            return Ok(result);
+        }
+
+        [HttpPost("CreateEmploymentType")]
+        public async Task<IActionResult> CreateEmploymentType([FromBody] EmploymentTypeDto dto)
+        {
+            var result = await _employmentTypeService.CreateAsync(dto);
+            return Ok(result);
+        }
+
+        [HttpPost("UpdateEmploymentType")]
+        public async Task<IActionResult> UpdateEmploymentType([FromBody] EmploymentTypeDto dto)
+        {
+            var result = await _employmentTypeService.UpdateAsync(dto);
+            return Ok(result);
+        }
+
+        [HttpPost("DeleteEmploymentType")]
+        public async Task<IActionResult> DeleteEmploymentType([FromQuery] int id)
+        {
+            var result = await _employmentTypeService.DeleteAsync(id);
+            return Ok(result);
+        }
+
+        #endregion
         #region Departments
         // ✅ GET ALL (with optional filters later)
         [HttpGet("GetDepartments")]
