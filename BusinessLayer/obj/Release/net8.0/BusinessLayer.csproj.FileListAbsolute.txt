@@ -1,0 +1,15 @@
+D:\Cortracker projects\HRMS_GIT\HRMS_Dev_API\BusinessLayer\bin\Release\net8.0\BusinessLayer.deps.json
+D:\Cortracker projects\HRMS_GIT\HRMS_Dev_API\BusinessLayer\bin\Release\net8.0\BusinessLayer.dll
+D:\Cortracker projects\HRMS_GIT\HRMS_Dev_API\BusinessLayer\bin\Release\net8.0\BusinessLayer.pdb
+D:\Cortracker projects\HRMS_GIT\HRMS_Dev_API\BusinessLayer\bin\Release\net8.0\DataAccessLayer.dll
+D:\Cortracker projects\HRMS_GIT\HRMS_Dev_API\BusinessLayer\bin\Release\net8.0\DataAccessLayer.pdb
+D:\Cortracker projects\HRMS_GIT\HRMS_Dev_API\BusinessLayer\obj\Release\net8.0\BusinessLayer.csproj.AssemblyReference.cache
+D:\Cortracker projects\HRMS_GIT\HRMS_Dev_API\BusinessLayer\obj\Release\net8.0\BusinessLayer.GeneratedMSBuildEditorConfig.editorconfig
+D:\Cortracker projects\HRMS_GIT\HRMS_Dev_API\BusinessLayer\obj\Release\net8.0\BusinessLayer.AssemblyInfoInputs.cache
+D:\Cortracker projects\HRMS_GIT\HRMS_Dev_API\BusinessLayer\obj\Release\net8.0\BusinessLayer.AssemblyInfo.cs
+D:\Cortracker projects\HRMS_GIT\HRMS_Dev_API\BusinessLayer\obj\Release\net8.0\BusinessLayer.csproj.CoreCompileInputs.cache
+D:\Cortracker projects\HRMS_GIT\HRMS_Dev_API\BusinessLayer\obj\Release\net8.0\Business.EA331CBA.Up2Date
+D:\Cortracker projects\HRMS_GIT\HRMS_Dev_API\BusinessLayer\obj\Release\net8.0\BusinessLayer.dll
+D:\Cortracker projects\HRMS_GIT\HRMS_Dev_API\BusinessLayer\obj\Release\net8.0\refint\BusinessLayer.dll
+D:\Cortracker projects\HRMS_GIT\HRMS_Dev_API\BusinessLayer\obj\Release\net8.0\BusinessLayer.pdb
+D:\Cortracker projects\HRMS_GIT\HRMS_Dev_API\BusinessLayer\obj\Release\net8.0\ref\BusinessLayer.dll
