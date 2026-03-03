@@ -530,40 +530,51 @@ namespace HRMS_Backend.Controllers
         #region Employee Master Details
 
 
-        [HttpGet("GetAllEmployees")]
-        public async Task<IActionResult> GetAllEmployees()
+        [HttpGet("GetAllEmployees/{userId}")]
+        public async Task<IActionResult> GetAllEmployees(int userId)
         {
-            var data = await _employeeService.GetAllEmployees();
+            var data = await _employeeService.GetAllEmployees(userId);
             return Ok(data);
         }
 
+        // ================= CREATE =================
         [HttpPost("CreateEmployee")]
         public async Task<IActionResult> CreateEmployee([FromBody] EmployeeMasterDto dto)
         {
+            if (dto.CreatedBy == null || dto.CreatedBy <= 0)
+                return BadRequest("Invalid user.");
+
             var data = await _employeeService.CreateEmployee(dto);
             return Ok(data);
         }
 
-        [HttpPost("UpdateEmployee/{id}")]
-        public async Task<IActionResult> UpdateEmployee(int id, [FromBody] EmployeeMasterDto dto)
+        // ================= UPDATE =================
+        [HttpPost("UpdateEmployee/{id}/{userId}")]
+        public async Task<IActionResult> UpdateEmployee(int id, int userId, [FromBody] EmployeeMasterDto dto)
         {
-            var data = await _employeeService.UpdateEmployee(id, dto);
-            if (data == null) return NotFound();
+            var data = await _employeeService.UpdateEmployee(id, dto, userId);
+            if (data == null)
+                return NotFound("Record not found or not authorized.");
+
             return Ok(data);
         }
 
-        [HttpPost("DeleteEmployee")]
-        public async Task<IActionResult> DeleteEmployee([FromQuery] int id)
+        // ================= DELETE =================
+        [HttpPost("DeleteEmployee/{id}/{userId}")]
+        public async Task<IActionResult> DeleteEmployee(int id, int userId)
         {
-            var success = await _employeeService.DeleteEmployee(id);
-            if (!success) return NotFound();
+            var success = await _employeeService.DeleteEmployee(id, userId);
+            if (!success)
+                return NotFound("Record not found or not authorized.");
+
             return Ok(new { message = "Deleted successfully" });
         }
 
-        [HttpGet("GetManagers")]
-        public async Task<IActionResult> GetManagers()
+        // ================= MANAGERS =================
+        [HttpGet("GetManagers/{userId}")]
+        public async Task<IActionResult> GetManagers(int userId)
         {
-            var data = await _employeeService.GetManagers();
+            var data = await _employeeService.GetManagers(userId);
             return Ok(data);
         }
 
