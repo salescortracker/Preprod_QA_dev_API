@@ -71,35 +71,39 @@ namespace BusinessLayer.Implementations
 
         public async Task<bool> AddShiftAsync(ShiftMasterDto dto)
         {
-            try
+            if (!TimeOnly.TryParse(dto.ShiftStartTime, out var startTime))
+                throw new ArgumentException("Invalid ShiftStartTime");
+
+            if (!TimeOnly.TryParse(dto.ShiftEndTime, out var endTime))
+                throw new ArgumentException("Invalid ShiftEndTime");
+
+            // Check for duplicate ShiftName within same CompanyId and RegionId
+            bool exists = await _context.ShiftMasters
+                .AnyAsync(s => s.ShiftName == dto.ShiftName
+                              && s.CompanyId == dto.CompanyID
+                              && s.RegionId == dto.RegionID);
+
+            if (exists)
+                throw new InvalidOperationException(
+                    $"Shift '{dto.ShiftName}' already exists for this Company and Region."
+                );
+
+            var entity = new ShiftMaster
             {
-                if (!TimeOnly.TryParse(dto.ShiftStartTime, out var startTime))
-                    throw new ArgumentException("Invalid ShiftStartTime");
+                ShiftName = dto.ShiftName,
+                ShiftStartTime = startTime,
+                ShiftEndTime = endTime,
+                GraceTime = dto.GraceTime,
+                CompanyId = dto.CompanyID,
+                RegionId = dto.RegionID,
+                IsActive = dto.IsActive,
+                CreatedAt = DateTime.Now,
+                CreatedBy = dto.UserId,
+                UserId = dto.UserId
+            };
 
-                if (!TimeOnly.TryParse(dto.ShiftEndTime, out var endTime))
-                    throw new ArgumentException("Invalid ShiftEndTime");
-
-                var entity = new ShiftMaster
-                {
-                    ShiftName = dto.ShiftName,
-                    ShiftStartTime = startTime,
-                    ShiftEndTime = endTime,
-                    GraceTime = dto.GraceTime,
-                    CompanyId = dto.CompanyID,
-                    RegionId = dto.RegionID,
-                    IsActive = dto.IsActive,
-                    CreatedAt = DateTime.Now,
-                    CreatedBy = dto.UserId,
-                    UserId = dto.UserId
-                };
-
-                _context.ShiftMasters.Add(entity);
-                return await _context.SaveChangesAsync() > 0;
-            }
-            catch(Exception ex)
-            {
-                throw ex;
-            }
+            _context.ShiftMasters.Add(entity);
+            return await _context.SaveChangesAsync() > 0;
         }
 
 

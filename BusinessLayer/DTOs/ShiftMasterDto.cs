@@ -24,4 +24,9 @@ namespace BusinessLayer.DTOs
         public string? CompanyName { get; set; }
         public string? RegionName { get; set; }
     }
+    public class ShiftCreateResult
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+    }
 }
