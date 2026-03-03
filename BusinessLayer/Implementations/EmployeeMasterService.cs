@@ -14,9 +14,10 @@ namespace BusinessLayer.Implementations
             _context = context;
         }
 
-        public async Task<List<EmployeeMasterDto>> GetAllEmployees()
+        public async Task<List<EmployeeMasterDto>> GetAllEmployees(int userId)
         {
             return await _context.EmployeeMasters
+                .Where(e => e.CreatedBy == userId)
                 .Select(e => new EmployeeMasterDto
                 {
                     EmployeeMasterId = e.EmployeeMasterId,
@@ -48,9 +49,11 @@ namespace BusinessLayer.Implementations
             return dto;
         }
 
-        public async Task<EmployeeMasterDto> UpdateEmployee(int id, EmployeeMasterDto dto)
+        public async Task<EmployeeMasterDto> UpdateEmployee(int id, EmployeeMasterDto dto, int userId)
         {
-            var entity = await _context.EmployeeMasters.FindAsync(id);
+            var entity = await _context.EmployeeMasters
+                .FirstOrDefaultAsync(e => e.EmployeeMasterId == id && e.CreatedBy == userId);
+
             if (entity == null)
                 return null;
 
@@ -59,15 +62,17 @@ namespace BusinessLayer.Implementations
             entity.RoleId = dto.RoleId;
             entity.Department = dto.Department;
             entity.ManagerId = dto.ManagerId;
-            entity.UpdatedBy = dto.UpdatedBy;
+            entity.UpdatedBy = userId;
 
             await _context.SaveChangesAsync();
             return dto;
         }
 
-        public async Task<bool> DeleteEmployee(int id)
+        public async Task<bool> DeleteEmployee(int id, int userId)
         {
-            var entity = await _context.EmployeeMasters.FindAsync(id);
+            var entity = await _context.EmployeeMasters
+                .FirstOrDefaultAsync(e => e.EmployeeMasterId == id && e.CreatedBy == userId);
+
             if (entity == null)
                 return false;
 
@@ -76,10 +81,10 @@ namespace BusinessLayer.Implementations
             return true;
         }
 
-        public async Task<List<ManagerDropdownDto>> GetManagers()
+        public async Task<List<ManagerDropdownDto>> GetManagers(int userId)
         {
             return await _context.Users
-                //.Where(u => u.RoleId == 2)
+                .Where(u => u.CreatedBy == userId)
                 .Select(u => new ManagerDropdownDto
                 {
                     UserId = u.UserId,
