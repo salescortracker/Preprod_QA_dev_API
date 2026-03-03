@@ -50,12 +50,30 @@ namespace HRMS_Backend.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var status = await _shiftAllocationService.AddShiftAsync(dto);
+            try
+            {
+                var status = await _shiftAllocationService.AddShiftAsync(dto);
 
-            if (status)
-                return Ok(new { success = true });
+                if (status)
+                    return Ok(new { success = true, message = "Shift added successfully." });
 
-            return BadRequest("Failed");
+                return BadRequest(new { success = false, message = "Failed to add shift." });
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Duplicate shift in same Company + Region
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                // Invalid time parsing
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+            catch (Exception)
+            {
+                // Generic 500
+                return StatusCode(500, new { success = false, message = "An unexpected error occurred." });
+            }
         }
 
 

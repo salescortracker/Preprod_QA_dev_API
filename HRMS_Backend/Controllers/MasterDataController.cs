@@ -142,14 +142,13 @@ namespace HRMS_Backend.Controllers
             }
         }
 
-        // ✅ SOFT DELETE
-        [HttpDelete("deleteDepartment/{id:int}")]
-        public async Task<IActionResult> SoftDelete(int id)
+        // ✅  DELETE
+        [HttpDelete("DeleteDepartment/{id:int}")]
+        public async Task<IActionResult> DeleteDepartment(int id)
         {
             try
             {
-                var modifiedBy = "system"; // 🔒 TODO: Replace with JWT user later
-                var result = await _service.SoftDeleteAsync(id);
+                var result = await _service.DeleteAsync(id);
 
                 if (!result.Success)
                     return NotFound(result);
