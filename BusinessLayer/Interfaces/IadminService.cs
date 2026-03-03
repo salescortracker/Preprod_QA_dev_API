@@ -21,5 +21,8 @@ namespace BusinessLayer.Interfaces
         Task<Gender> AddgenderAsync(Gender gender);
         Task<Gender?> UpdategenderAsync(Gender gender);
         Task<bool> DeletegenderAsync(int genderId);
+
+        Task<IEnumerable<Employmenttype>> GetAllEmploymentTypeByUserAsync(int companyId, int regionId);
+
     }
 }

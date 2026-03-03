@@ -14,6 +14,17 @@ namespace BusinessLayer.Implementations
         {
             _context = context;
         }
+        public async Task<IEnumerable<Employmenttype>> GetAllEmploymentTypeByUserAsync(int companyId, int regionId)
+        {
+            return await _context.Employmenttypes
+                .Where(x => !x.IsDeleted &&
+                            x.IsActive &&
+                            x.CompanyId == companyId &&
+                            x.RegionId == regionId)
+                .ToListAsync();
+        }
+
+
         public async Task<IEnumerable<Relationship>> GetAllrelatiopnshipByUserAsync(int companyId, int regionId)
         {
             return await _context.Relationships
