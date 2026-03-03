@@ -306,9 +306,11 @@ public class UpdateResignationStatusRequest
         /// </summary>
         /// <returns></returns>
         [HttpGet("modeofstudy")]
-        public async Task<IActionResult> GetModeOfStudy()
+        public async Task<IActionResult> GetModeOfStudy(
+     [FromQuery] int companyId,
+     [FromQuery] int regionId)
         {
-            var data = await _employeeService.GetModeOfStudyListAsync();
+            var data = await _employeeService.GetModeOfStudyListAsync(companyId, regionId);
             return Ok(data);
         }
 
