@@ -89,6 +89,7 @@ namespace BusinessLayer.Interfaces
         Task<DigitalCardDto> GetDigitalCardAsync(int userId);
 
         Task<EmployeeProfileDto?> GetEmployeeProfileAsync(int userId);
+        Task<List<EmployeeDto>> GetEmployeesByCompanyAndRegionAsync(int companyId, int regionId);
 
         Task<bool> deleteempFamilyAsync(int familyId);
         Task<bool> updateempFamilyAsync(EmployeeFamilyDto model);

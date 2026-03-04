@@ -1266,6 +1266,11 @@ namespace BusinessLayer.Implementations
             await _context.SaveChangesAsync();
             return true;
         }
+
+
+
+
+
         #endregion
         #region employee Bank Details
         /// <summary>
@@ -2678,7 +2683,29 @@ namespace BusinessLayer.Implementations
         }
         #endregion
 
+        public async Task<List<EmployeeDto>> GetEmployeesByCompanyAndRegionAsync(int companyId, int regionId)
+        {
+            var data = await (
+                from u in _context.Users
 
+                
+
+                where u.CompanyId == companyId && u.RegionId == regionId
+                      && u.Status == "Active" // Optional: only active employees
+
+                select new EmployeeDto
+                {
+                    UserId = u.UserId,
+                    EmployeeCode = u.EmployeeCode,
+                    EmployeeName = u.FullName,
+                    Email = u.Email,
+                  
+                    Status = u.Status
+                }
+            ).ToListAsync();
+
+            return data;
+        }
 
     }
 }

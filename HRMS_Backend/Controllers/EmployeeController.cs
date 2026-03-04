@@ -2,6 +2,7 @@
 using BusinessLayer.Implementations;
 using BusinessLayer.Interfaces;
 using DataAccessLayer.DBContext;
+using DataAccessLayer.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -2399,6 +2400,24 @@ public class UpdateResignationStatusRequest
                 .GetResignationsForHRAsync(companyId, regionId);
 
             return Ok(data);
+        }
+
+
+
+
+        [HttpGet("GetByCompanyAndRegion/{companyId}/{regionId}")]
+        public async Task<IActionResult> GetByCompanyAndRegion(int companyId, int regionId)
+        {
+            var employees = await _employeeService.GetEmployeesByCompanyAndRegionAsync(companyId, regionId);
+
+            if (employees == null || !employees.Any())
+                return NotFound(new { message = "No employees found for this company/region" });
+
+            return Ok(new
+            {
+                message = "Employees loaded successfully",
+                data = employees
+            });
         }
 
     }
