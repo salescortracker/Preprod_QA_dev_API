@@ -58,19 +58,19 @@ namespace BusinessLayer.Interfaces
         Task<bool> updateempLetterAsync(EmployeeLetterDto model);
         Task<bool> deleteempLetterAsync(int id);
 
-        Task<IEnumerable<EmployeeBankDetailsDto>> getAllempBankAsync();
+        Task<IEnumerable<EmployeeBankDetailsDto>> getAllempBankAsync(int userId);
         Task<EmployeeBankDetailsDto?> getByIdempBankAsync(int id);
         Task<bool> addempBankAsync(EmployeeBankDetailsDto dto);
         Task<bool> updateempBankAsync(EmployeeBankDetailsDto dto);
         Task<bool> deleteempBankAsync(int id);
 
-        Task<IEnumerable<EmployeeDdlistDto>> getAllempDDAsync();
+        Task<IEnumerable<EmployeeDdlistDto>> getAllempDDAsync(int userId);
         Task<EmployeeDdlistDto?> getByIdempDDAsync(int id);
         Task<bool> addempDDAsync(EmployeeDdlistDto dto);
         Task<bool> updateempDDAsync(EmployeeDdlistDto dto);
         Task<bool> deleteempDDAsync(int id);
 
-        Task<List<EmployeeW4Dto>> getAllempW4Async();
+        Task<List<EmployeeW4Dto>> getAllempW4Async(int userId);
         Task<EmployeeW4Dto?> getByIdempW4Async(int id);
         Task<bool> addempW4Async(EmployeeW4Dto dto);
         Task<bool> updateempW4Async(EmployeeW4Dto dto);

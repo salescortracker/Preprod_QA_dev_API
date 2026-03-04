@@ -24,7 +24,7 @@ namespace BusinessLayer.Interfaces
         // -------------------------------
         // SHIFT ALLOCATION (Main Table)
         // -------------------------------
-        Task<IEnumerable<ShiftAllocationDto>> GetAllAllocationsAsync();
+        Task<IEnumerable<ShiftAllocationDto>> GetAllAllocationsAsync(int userId);
         Task<ShiftAllocationDto?> GetAllocationByIdAsync(int id);
         Task<bool> AllocateShiftAsync(ShiftAllocationDto dto);
         Task<bool> UpdateAllocationAsync(ShiftAllocationDto dto);
