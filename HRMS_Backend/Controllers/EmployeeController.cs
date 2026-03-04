@@ -1222,15 +1222,13 @@ public class UpdateResignationStatusRequest
         /// 
         /// </summary>
         /// <returns></returns>
-        [HttpGet("GetAllBankDetails")]
-        public async Task<IActionResult> GetAllBankDetails()
+        [HttpGet("GetAllBankDetails/{userId}")]
+        public async Task<IActionResult> GetAllBankDetails(int userId)
         {
-            var data = await _employeeService.getAllempBankAsync();
+            var data = await _employeeService.getAllempBankAsync(userId);
             return Ok(data);
         }
-        /// <summary>
-        /// 
-        /// </summary>
+        
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpGet("GetBankDetailsById/{id}")]
@@ -1289,10 +1287,10 @@ public class UpdateResignationStatusRequest
         /// 
         /// </summary>
         /// <returns></returns>
-        [HttpGet("GetAllDdlist")]
-        public async Task<IActionResult> GetAllDdlist()
+        [HttpGet("GetAllDdlist/{userId}")]
+        public async Task<IActionResult> GetAllDdlist(int userId)
         {
-            var data = await _employeeService.getAllempDDAsync();
+            var data = await _employeeService.getAllempDDAsync(userId);
             return Ok(data);
         }
         /// <summary>
@@ -1405,10 +1403,10 @@ public class UpdateResignationStatusRequest
         /// 
         /// </summary>
         /// <returns></returns>
-        [HttpGet("GetAllW4s")]
-        public async Task<IActionResult> GetAllW4s()
+        [HttpGet("GetAllW4s/{userId}")]
+        public async Task<IActionResult> GetAllW4s(int userId)
         {
-            var data = await _employeeService.getAllempW4Async();
+            var data = await _employeeService.getAllempW4Async(userId);
             return Ok(data);
         }
         /// <summary>
@@ -2067,9 +2065,9 @@ public class UpdateResignationStatusRequest
         //                  GET ALL ALLOCATIONS
         // ======================================================
         [HttpGet("GetshiftAllocationAll")]
-        public async Task<IActionResult> GetshiftAllocationAll()
+        public async Task<IActionResult> GetshiftAllocationAll(int userId)
         {
-            var result = await _shiftAllocationService.GetAllAllocationsAsync();
+            var result = await _shiftAllocationService.GetAllAllocationsAsync(userId);
             return Ok(result);
         }
 

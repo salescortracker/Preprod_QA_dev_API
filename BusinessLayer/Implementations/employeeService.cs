@@ -1272,9 +1272,9 @@ namespace BusinessLayer.Implementations
         /// 
         /// </summary>
         /// <returns></returns>
-        public async Task<IEnumerable<EmployeeBankDetailsDto>> getAllempBankAsync()
+        public async Task<IEnumerable<EmployeeBankDetailsDto>> getAllempBankAsync(int userId)
         {
-            var data = await _unitOfWork.Repository<EmployeeBankDetail>().GetAllAsync();
+            var data = await _unitOfWork.Repository<EmployeeBankDetail>().FindAsync(x => x.UserId == userId); 
 
             return data.Select(e => new EmployeeBankDetailsDto
             {
@@ -1405,25 +1405,26 @@ namespace BusinessLayer.Implementations
         /// 
         /// </summary>
         /// <returns></returns>
-        public async Task<IEnumerable<EmployeeDdlistDto>> getAllempDDAsync()
+        public async Task<IEnumerable<EmployeeDdlistDto>> getAllempDDAsync(int userId)
         {
-            var data = await _context.EmployeeDdlists.ToListAsync();
-
-            return data.Select(e => new EmployeeDdlistDto
-            {
-                DdlistId = e.DdlistId,
-                EmployeeId = e.EmployeeId,
-                RegionId = e.RegionId,
-                UserId = e.UserId,
-                CompanyId = e.CompanyId,
-                Ddnumber = e.Ddnumber,
-                Dddate = e.Dddate,
-                BankName = e.BankName,
-                BranchName = e.BranchName,
-                Amount = e.Amount,
-                PayeeName = e.PayeeName,
-                DdcopyFilePath = e.DdcopyFilePath
-            });
+            return await _context.EmployeeDdlists
+         .Where(x => x.UserId == userId)
+         .Select(e => new EmployeeDdlistDto
+         {
+             DdlistId = e.DdlistId,
+             EmployeeId = e.EmployeeId,
+             RegionId = e.RegionId,
+             UserId = e.UserId,
+             CompanyId = e.CompanyId,
+             Ddnumber = e.Ddnumber,
+             Dddate = e.Dddate,
+             BankName = e.BankName,
+             BranchName = e.BranchName,
+             Amount = e.Amount,
+             PayeeName = e.PayeeName,
+             DdcopyFilePath = e.DdcopyFilePath
+         })
+         .ToListAsync();
         }
         /// <summary>
         /// 
@@ -1520,35 +1521,36 @@ namespace BusinessLayer.Implementations
         }
         #endregion
         #region employee w4 details
-        public async Task<List<EmployeeW4Dto>> getAllempW4Async()
+        public async Task<List<EmployeeW4Dto>> getAllempW4Async(int userId)
         {
             return await _context.EmployeeW4s
-                .Select(w => new EmployeeW4Dto
-                {
-                    W4Id = w.W4Id,
-                    EmployeeId = w.EmployeeId,
-                    FirstName = w.FirstName,
-                    MiddleInitial = w.MiddleInitial,
-                    LastName = w.LastName,
-                    Ssn = w.Ssn,
-                    Address = w.Address,
-                    City = w.City,
-                    State = w.State,
-                    ZipCode = w.ZipCode,
-                    FilingStatus = w.FilingStatus,
-                    MultipleJobsOrSpouse = w.MultipleJobsOrSpouse,
-                    TotalDependents = w.TotalDependents,
-                    DependentAmounts = w.DependentAmounts,
-                    OtherIncome = w.OtherIncome,
-                    Deductions = w.Deductions,
-                    ExtraWithholding = w.ExtraWithholding,
-                    EmployeeSignature = w.EmployeeSignature,
-                    FormDate = w.FormDate,
-                    RegionId = w.RegionId,
-                    UserId = w.UserId,
-                    CompanyId = w.CompanyId
-                })
-                .ToListAsync();
+        .Where(w => w.UserId == userId)   // ✅ FILTER BY USERID
+        .Select(w => new EmployeeW4Dto
+        {
+            W4Id = w.W4Id,
+            EmployeeId = w.EmployeeId,
+            FirstName = w.FirstName,
+            MiddleInitial = w.MiddleInitial,
+            LastName = w.LastName,
+            Ssn = w.Ssn,
+            Address = w.Address,
+            City = w.City,
+            State = w.State,
+            ZipCode = w.ZipCode,
+            FilingStatus = w.FilingStatus,
+            MultipleJobsOrSpouse = w.MultipleJobsOrSpouse,
+            TotalDependents = w.TotalDependents,
+            DependentAmounts = w.DependentAmounts,
+            OtherIncome = w.OtherIncome,
+            Deductions = w.Deductions,
+            ExtraWithholding = w.ExtraWithholding,
+            EmployeeSignature = w.EmployeeSignature,
+            FormDate = w.FormDate,
+            RegionId = w.RegionId,
+            UserId = w.UserId,
+            CompanyId = w.CompanyId
+        })
+        .ToListAsync();
         }
 
         public async Task<EmployeeW4Dto?> getByIdempW4Async(int id)

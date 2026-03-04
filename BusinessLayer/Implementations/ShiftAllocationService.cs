@@ -163,11 +163,11 @@ namespace BusinessLayer.Implementations
         //              SHIFT ALLOCATION SERVICES
         // ======================================================
 
-        public async Task<IEnumerable<ShiftAllocationDto>> GetAllAllocationsAsync()
+        public async Task<IEnumerable<ShiftAllocationDto>> GetAllAllocationsAsync(int userId)
         {
             return await (
                 from sa in _context.ShiftAllocations
-
+                where sa.UserId == userId
                 join u in _context.Users
                     on sa.UserId equals u.UserId into userGroup
                 from u in userGroup.DefaultIfEmpty()
