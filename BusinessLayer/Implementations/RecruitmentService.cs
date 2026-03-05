@@ -14,7 +14,77 @@ namespace BusinessLayer.Implementations
         {
             _unitOfWork = unitOfWork;
         }
-      
+       
+        public async Task<IEnumerable<object>> GetDesignationsWithDepartmentAsync(int companyId, int regionId)
+        {
+            // Get designations
+            var designations = await _unitOfWork.Repository<Designation>()
+                .FindAsync(x =>
+                    x.CompanyId == companyId &&
+                    x.RegionId == regionId &&
+                    x.IsActive &&
+                    !x.IsDeleted);
+
+            // Get departments
+            var departments = await _unitOfWork.Repository<Department>()
+                .FindAsync(x => x.IsActive && !x.IsDeleted);
+
+            // Join manually
+            var result = from d in designations
+                         join dep in departments
+                         on d.DepartmentId equals dep.DepartmentId into deptGroup
+                         from dep in deptGroup.DefaultIfEmpty()
+                         select new
+                         {
+                             designationId = d.DesignationId,
+                             designationName = d.DesignationName,
+                             departmentId = d.DepartmentId,
+                             departmentName = dep != null ? dep.DepartmentName : ""
+                         };
+
+            return result;
+        }
+        public async Task<IEnumerable<RecruitmentNoticePeriodDto>> GetNoticePeriodsAsync(int companyId, int regionId)
+        {
+            var data = await _unitOfWork.Repository<RecruitmentNoticePeriod>()
+                .FindAsync(x =>
+                    x.CompanyId == companyId &&
+                    x.RegionId == regionId &&
+                    x.IsActive &&
+                    !x.IsDeleted);
+
+            return data.Select(x => new RecruitmentNoticePeriodDto
+            {
+                RecruitmentNoticePeriodID = x.RecruitmentNoticePeriodId,
+                CompanyID = x.CompanyId,
+                RegionID = x.RegionId,
+                NoticePeriod = x.NoticePeriod,
+                IsActive = x.IsActive,
+                UserId = x.UserId
+            });
+        }
+        public async Task<IEnumerable<MaritalStatusDto>> GetMaritalStatusesAsync(int companyId, int regionId)
+        {
+            var data = await _unitOfWork.Repository<MaritalStatus>()
+                .FindAsync(x =>
+                    x.CompanyId == companyId &&
+                    x.RegionId == regionId &&
+                    x.IsActive &&
+                    !x.IsDeleted);
+
+            return data.Select(x => new MaritalStatusDto
+            {
+                MaritalStatusId = x.MaritalStatusId,
+                CompanyId = x.CompanyId,
+                RegionId = x.RegionId,
+                MaritalStatusName = x.MaritalStatusName,
+                Description = x.Description,
+                IsActive = x.IsActive,
+                UserId = x.UserId ?? 0
+            });
+        }
+
+
         public async Task<int> SaveCandidateAsync(CandidateDto dto)
         {
             int year = DateTime.Now.Year;
@@ -94,8 +164,8 @@ namespace BusinessLayer.Implementations
                         RegionId = dto.RegionId,
                         CompanyId = dto.CompanyId,
                         UserId = dto.UserId,
-                        FromYear = e.FromYear,
-                        ToYear = e.ToYear,
+                        FromDate = DateOnly.FromDateTime(e.FromDate),
+                        ToDate = DateOnly.FromDateTime(e.ToDate),
                         Designation = e.Designation,
                         Organization = e.Organization,
                         CreatedAt = DateTime.Now,
@@ -159,6 +229,7 @@ namespace BusinessLayer.Implementations
                     c.CandidateId,
                     c.SeqNo,
                     c.FirstName,
+                    c.LastName,
                     c.Email,
                     c.Mobile,
                     c.Designation,
@@ -240,8 +311,13 @@ namespace BusinessLayer.Implementations
                 Reason = candidate.Reason,
                 Experiences = experiences.Select(e => new CandidateExperienceDto
                 {
-                    FromYear = e.FromYear,
-                    ToYear = e.ToYear,
+                    FromDate = e.FromDate.HasValue
+    ? e.FromDate.Value.ToDateTime(TimeOnly.MinValue)
+    : DateTime.MinValue,
+
+                    ToDate = e.ToDate.HasValue
+    ? e.ToDate.Value.ToDateTime(TimeOnly.MinValue)
+    : DateTime.MinValue,
                     Designation = e.Designation,
                     Organization = e.Organization
                 }).ToList(),
@@ -295,8 +371,8 @@ namespace BusinessLayer.Implementations
                     .AddRangeAsync(exp!.Select(e => new CandidateExperience
                     {
                         CandidateId = dto.CandidateId,
-                        FromYear = e.FromYear,
-                        ToYear = e.ToYear,
+                        FromDate = DateOnly.FromDateTime(e.FromDate),
+                        ToDate = DateOnly.FromDateTime(e.ToDate),
                         Designation = e.Designation,
                         Organization = e.Organization,
                         CreatedAt = DateTime.Now
@@ -345,7 +421,7 @@ namespace BusinessLayer.Implementations
                 .FindAsync(x =>
                     x.CompanyId == companyId &&
                     x.RegionId == regionId &&
-                   x.RoleId == 1009 &&          // 🔥 ONLY RECRUITERS
+                   x.RoleId == 59 &&          
                 x.Status == "Active");
 
             return users.Select(u => new
@@ -354,6 +430,26 @@ namespace BusinessLayer.Implementations
                 FullName = u.FullName
             });
         }
+        public async Task<IEnumerable<ScreeningResultDto>> GetScreeningResultsAsync(int companyId, int regionId)
+        {
+            var data = await _unitOfWork.Repository<ScreeningResult>()
+                .FindAsync(x =>
+                    x.CompanyId == companyId &&
+                    x.RegionId == regionId &&
+                    x.IsActive &&
+                    !x.IsDeleted);
+
+            return data.Select(x => new ScreeningResultDto
+            {
+                ScreeningResultID = x.ScreeningResultId,
+                CompanyID = x.CompanyId,
+                RegionID = x.RegionId,
+                Weekoff = x.Weekoff,
+                IsActive = x.IsActive,
+                UserId = x.UserId
+            });
+        }
+
 
         public async Task<IEnumerable<object>> GetScreeningCandidatesTopTableAsync(
 int companyId,
@@ -413,7 +509,19 @@ string designation)
                 if (candidate == null)
                     throw new Exception("Candidate not found");
 
-                candidate.StageId = 3; // Interview
+                // 🔥 Stage Logic
+                if (dto.ScreeningStatus == "Pass")
+                {
+                    candidate.StageId = 3; // Move to Interview
+                }
+                else if (dto.ScreeningStatus == "Reject")
+                {
+                    candidate.StageId = 2; // Stay in Screening
+                }
+                else if (dto.ScreeningStatus == "Hold")
+                {
+                    candidate.StageId = 2; // Stay in Screening
+                } // Interview
                 candidate.ModifiedAt = DateTime.Now;
                 candidate.ModifiedBy = dto.UserId;
 
@@ -504,6 +612,25 @@ string designation)
 
 
         /////////////////Interview
+        public async Task<IEnumerable<InterviewLevelDto>> GetInterviewLevelsAsync(int companyId, int regionId)
+        {
+            var data = await _unitOfWork.Repository<InterviewLevel>()
+                .FindAsync(x =>
+                    x.CompanyId == companyId &&
+                    x.RegionId == regionId &&
+                    x.IsActive &&
+                    !x.IsDeleted);
+
+            return data.Select(x => new InterviewLevelDto
+            {
+                InterviewLevelsID = x.InterviewLevelsId,
+                CompanyID = x.CompanyId,
+                RegionID = x.RegionId,
+                InterviewLevels = x.InterviewLevels,
+                IsActive = x.IsActive,
+                UserId = x.UserId
+            });
+        }
 
         public async Task<IEnumerable<object>> GetScreeningCandidatesTopTableInterviewAsync(
 int companyId,
@@ -611,6 +738,7 @@ string designation)
      {
          var candidate = candidates.First(c => c.CandidateId == iv.CandidateId);
          var interviewer = interviewers.First(u => u.UserId == iv.InterviewerId);
+
 
          return new CandidateInterviewDto
          {
