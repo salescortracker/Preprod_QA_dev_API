@@ -16,29 +16,79 @@ namespace BusinessLayer.Implementations
             _unitOfWork = unitOfWork;
             _hrmsContext = hRMSContext;
         }
+        public async Task<ApiResponse<IEnumerable<DepartmentDropdownDto>>>
+    GetDepartmentsForDropdownAsync(int companyId, int regionId)
+        {
+            try
+            {
+                var departments = await _unitOfWork
+                    .Repository<Department>()
+                    .FindAsync(d =>
+                        !d.IsDeleted &&
+                        d.IsActive &&
+                        d.CompanyId == companyId &&
+                        d.RegionId == regionId 
+                        
+                    );
+
+                var result = departments
+                    .Select(d => new DepartmentDropdownDto
+                    {
+                        DepartmentId = d.DepartmentId,
+                        DepartmentName = d.DepartmentName
+                    })
+                    .OrderBy(x => x.DepartmentName)
+                    .ToList();
+
+                return new ApiResponse<IEnumerable<DepartmentDropdownDto>>(
+                    result,
+                    "Departments retrieved successfully."
+                );
+            }
+            catch (Exception ex)
+            {
+                return new ApiResponse<IEnumerable<DepartmentDropdownDto>>(
+                    null!,
+                    $"Failed to load departments. {ex.Message}",
+                    false
+                );
+            }
+        }
 
         public async Task<ApiResponse<IEnumerable<DesignationDTO>>> GetAllAsync(int userId)
         {
             try
             {
-                var list = await _unitOfWork.Repository<Designation>().FindAsync(d => !d.IsDeleted);
-                var dto = list.Where(x=>x.UserId==userId).Select(d => new DesignationDTO
+                var list = await _unitOfWork.Repository<Designation>()
+                    .FindAsync(d => !d.IsDeleted && d.UserId == userId);
+
+                var dto = list.Select(d => new DesignationDTO
                 {
                     DesignationID = d.DesignationId,
                     CompanyID = d.CompanyId,
                     RegionID = d.RegionId,
+                    DepartmentID = d.DepartmentId,
                     DesignationName = d.DesignationName,
-                    Description = d.Description,
                     IsActive = d.IsActive,
-                    companyName=d.CompanyId!=null?_hrmsContext.Companies.Where(x=>x.CompanyId==d.CompanyId).FirstOrDefault().CompanyName:null,
-                    regionName=d.RegionId!=null?_hrmsContext.Regions.Where(x=>x.RegionId==d.RegionId).FirstOrDefault().RegionName:null
+                    companyName = _hrmsContext.Companies
+                                    .Where(x => x.CompanyId == d.CompanyId)
+                                    .Select(x => x.CompanyName)
+                                    .FirstOrDefault(),
+                    regionName = _hrmsContext.Regions
+                                    .Where(x => x.RegionId == d.RegionId)
+                                    .Select(x => x.RegionName)
+                                    .FirstOrDefault(),
+                    departmentName = _hrmsContext.Departments
+                                    .Where(x => x.DepartmentId == d.DepartmentId)
+                                    .Select(x => x.DepartmentName)
+                                    .FirstOrDefault()
                 });
 
-                return new ApiResponse<IEnumerable<DesignationDTO>>(dto, "Designations retrieved successfully.");
+                return new ApiResponse<IEnumerable<DesignationDTO>>(dto, "Success");
             }
             catch (Exception ex)
             {
-                return new ApiResponse<IEnumerable<DesignationDTO>>(null!, $"Failed to get designations. {ex.Message}", false);
+                return new ApiResponse<IEnumerable<DesignationDTO>>(null!, ex.Message, false);
             }
         }
 
@@ -56,7 +106,7 @@ namespace BusinessLayer.Implementations
                     CompanyID = d.CompanyId,
                     RegionID = d.RegionId,
                     DesignationName = d.DesignationName,
-                    Description = d.Description,
+                    //Description = d.Description,
                     IsActive = d.IsActive
                 };
                 return new ApiResponse<DesignationDTO?>(dto, "Designation retrieved.");
@@ -85,12 +135,12 @@ namespace BusinessLayer.Implementations
                 {
                     CompanyId = dto.CompanyID,
                     RegionId = dto.RegionID,
+                    DepartmentId = dto.DepartmentID,
                     DesignationName = dto.DesignationName,
-                    Description = dto.Description,
-                    IsActive = dto.IsActive,   
-                    CreatedBy=dto.createdBy,   
+                    IsActive = dto.IsActive,
+                    CreatedBy = dto.createdBy,
                     CreatedAt = DateTime.UtcNow,
-                    UserId=dto.userId
+                    UserId = dto.userId
                 };
 
                 await _unitOfWork.Repository<Designation>().AddAsync(entity);
@@ -102,7 +152,7 @@ namespace BusinessLayer.Implementations
                     CompanyID = entity.CompanyId,
                     RegionID = entity.RegionId,
                     DesignationName = entity.DesignationName,
-                    Description = entity.Description,
+                    //Description = entity.Description,
                     IsActive = entity.IsActive
                 };
 
@@ -134,8 +184,8 @@ namespace BusinessLayer.Implementations
 
                 entity.CompanyId = dto.CompanyID;
                 entity.RegionId = dto.RegionID;
+                entity.DepartmentId = dto.DepartmentID;
                 entity.DesignationName = dto.DesignationName;
-                entity.Description = dto.Description;
                 entity.IsActive = dto.IsActive;
                 entity.ModifiedBy = dto.modifiedBy;
                 entity.ModifiedAt = DateTime.UtcNow;
@@ -149,7 +199,7 @@ namespace BusinessLayer.Implementations
                     CompanyID = entity.CompanyId,
                     RegionID = entity.RegionId,
                     DesignationName = entity.DesignationName,
-                    Description = entity.Description,
+                    //Description = entity.Description,
                     IsActive = entity.IsActive
                 };
 
@@ -211,7 +261,7 @@ namespace BusinessLayer.Implementations
                             CompanyId = dto.CompanyID,
                             RegionId = dto.RegionID,
                             DesignationName = dto.DesignationName,
-                            Description = dto.Description,
+                            //Description = dto.Description,
                             IsActive = dto.IsActive,
                             CreatedBy = createdBy,
                             CreatedAt = DateTime.UtcNow

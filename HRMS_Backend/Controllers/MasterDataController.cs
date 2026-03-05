@@ -1,4 +1,5 @@
 ﻿using BusinessLayer.DTOs;
+using BusinessLayer.Implementations;
 using BusinessLayer.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -29,7 +30,11 @@ namespace HRMS_Backend.Controllers
         private readonly IPolicyCategoryService _policyCategoryService;
         private readonly IResignationService _resignationService;
         private readonly IEventService _Eventservice;
-        public MasterDataController(IEventService Eventservice,IResignationService resignationService,IPolicyCategoryService policyCategoryService,ILeaveStatusService leaveStatusService,IHolidayListService holidayListService, IWeekoffService weekoffService,IAttendanceStatusService attendanceStatusService, IExpenseCategoryService expenseCategoryservice,IDepartmentService service, IDesignationService designationService, IGenderService genderService,IadminService adminService, ILeaveTypeService leaveTypeService,  ILogger<MasterDataController> logger, IKpiCategoryService kpiCategoryService, IEmployeeMasterService employeeService, ICertificationTypeService certificationTypeService, IAssetStatusService assetStatusService, IBloodGroupService bloodGroupService, IHelpdeskCategoryAdminService helpdeskCategoryAdminService, IProjectStatusAdminService projectStatusAdminService, IPriorityService priorityService)
+        private readonly IRecruitmentNoticePeriodService _recruitmentNoticePeriodService;
+        private readonly IScreeningResultService _screeningResultService;
+        private readonly IInterviewLevelService _interviewLevelService;
+        public MasterDataController(IEventService Eventservice,IResignationService resignationService,IPolicyCategoryService policyCategoryService,ILeaveStatusService leaveStatusService,IHolidayListService holidayListService, IWeekoffService weekoffService,IAttendanceStatusService attendanceStatusService, IExpenseCategoryService expenseCategoryservice,IDepartmentService service, IDesignationService designationService, IGenderService genderService,IadminService adminService, ILeaveTypeService leaveTypeService,  ILogger<MasterDataController> logger, IKpiCategoryService kpiCategoryService, IEmployeeMasterService employeeService, ICertificationTypeService certificationTypeService, IAssetStatusService assetStatusService, IBloodGroupService bloodGroupService, IHelpdeskCategoryAdminService helpdeskCategoryAdminService, IProjectStatusAdminService projectStatusAdminService, 
+            IPriorityService priorityService, IRecruitmentNoticePeriodService recruitmentNoticePeriodService,IScreeningResultService screeningResultService, IInterviewLevelService interviewLevelService)
         {
             _service = service;
             _Eventservice = Eventservice;
@@ -53,7 +58,141 @@ namespace HRMS_Backend.Controllers
             _leaveStatusService = leaveStatusService;
             _policyCategoryService = policyCategoryService;
             _resignationService = resignationService;
+            _recruitmentNoticePeriodService = recruitmentNoticePeriodService;
+            _screeningResultService = screeningResultService;
+            _interviewLevelService = interviewLevelService;
         }
+        #region InterviewLevels
+
+        [HttpGet("interview-levels")]
+        public async Task<IActionResult> GetInterviewLevels([FromQuery] int userId)
+        {
+            var result = await _interviewLevelService.GetAll(userId);
+            return Ok(result);
+        }
+
+        [HttpPost("CreateInterviewLevel")]
+        public async Task<IActionResult> CreateInterviewLevel([FromBody] InterviewLevelDto dto)
+        {
+            var result = await _interviewLevelService.CreateAsync(dto);
+            return Ok(result);
+        }
+
+        [HttpPost("UpdateInterviewLevel")]
+        public async Task<IActionResult> UpdateInterviewLevel([FromBody] InterviewLevelDto dto)
+        {
+            var result = await _interviewLevelService.UpdateAsync(dto);
+            return Ok(result);
+        }
+
+        [HttpPost("DeleteInterviewLevel")]
+        public async Task<IActionResult> DeleteInterviewLevel([FromQuery] int id)
+        {
+            var result = await _interviewLevelService.DeleteAsync(id);
+            return Ok(result);
+        }
+
+        #endregion
+        #region ScreeningResult
+
+        [HttpGet("screening-result")]
+        public async Task<IActionResult> GetScreeningResults([FromQuery] int userId)
+        {
+            var result = await _screeningResultService.GetAll(userId);
+            return Ok(result);
+        }
+
+        [HttpPost("CreateScreeningResult")]
+        public async Task<IActionResult> CreateScreeningResult([FromBody] ScreeningResultDto dto)
+        {
+            var result = await _screeningResultService.CreateAsync(dto);
+            return Ok(result);
+        }
+
+        [HttpPost("UpdateScreeningResult")]
+        public async Task<IActionResult> UpdateScreeningResult([FromBody] ScreeningResultDto dto)
+        {
+            var result = await _screeningResultService.UpdateAsync(dto);
+            return Ok(result);
+        }
+
+        [HttpPost("DeleteScreeningResult")]
+        public async Task<IActionResult> DeleteScreeningResult([FromQuery] int id)
+        {
+            var result = await _screeningResultService.DeleteAsync(id);
+            return Ok(result);
+        }
+
+        #endregion
+        #region Department Dropdown
+
+        [HttpGet("GetDepartmentsForDropdown")]
+        public async Task<IActionResult> GetDepartmentsForDropdown(
+            int companyId,
+            int regionId)
+        {
+            try
+            {
+                var result = await _designationService
+                    .GetDepartmentsForDropdownAsync(companyId, regionId);
+
+                if (!result.Success)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = result.Message
+                    });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = result.Message,
+                    data = result.Data
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching department dropdown.");
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "An unexpected error occurred while loading departments."
+                });
+            }
+        }
+
+        #endregion
+        #region RecruitmentNoticePeriod
+
+        [HttpGet("recruitmentnoticeperiod-list")]
+        public async Task<IActionResult> GetRecruitmentNoticePeriodList([FromQuery] int userId)
+        {
+            var result = await _recruitmentNoticePeriodService.GetAllRecruitmentNoticePeriodService(userId);
+            return Ok(result);
+        }
+
+        [HttpPost("CreateRecruitmentNoticePeriod")]
+        public async Task<IActionResult> CreateRecruitmentNoticePeriod([FromBody] RecruitmentNoticePeriodDto dto)
+        {
+            var result = await _recruitmentNoticePeriodService.CreateRecruitmentNoticePeriodServiceAsync(dto);
+            return Ok(result);
+        }
+
+        [HttpPost("UpdateRecruitmentNoticePeriod")]
+        public async Task<IActionResult> UpdateRecruitmentNoticePeriod([FromBody] RecruitmentNoticePeriodDto dto)
+        {
+            var result = await _recruitmentNoticePeriodService.UpdateRecruitmentNoticePeriodServiceAsync(dto);
+            return Ok(result);
+        }
+
+        [HttpPost("DeleteRecruitmentNoticePeriod")]
+        public async Task<IActionResult> DeleteRecruitmentNoticePeriod([FromQuery] int id)
+        {
+            var result = await _recruitmentNoticePeriodService.DeleteRecruitmentNoticePeriodServiceAsync(id);
+            return Ok(result);
+        }
+
+        #endregion
         #region Departments
         // ✅ GET ALL (with optional filters later)
         [HttpGet("GetDepartments")]
@@ -530,40 +669,52 @@ namespace HRMS_Backend.Controllers
         #region Employee Master Details
 
 
-        [HttpGet("GetAllEmployees")]
-        public async Task<IActionResult> GetAllEmployees()
+        // ================= GET ALL =================
+        [HttpGet("GetAllEmployees/{userId}")]
+        public async Task<IActionResult> GetAllEmployees(int userId)
         {
-            var data = await _employeeService.GetAllEmployees();
+            var data = await _employeeService.GetAllEmployees(userId);
             return Ok(data);
         }
 
+        // ================= CREATE =================
         [HttpPost("CreateEmployee")]
         public async Task<IActionResult> CreateEmployee([FromBody] EmployeeMasterDto dto)
         {
+            if (dto.CreatedBy == null || dto.CreatedBy <= 0)
+                return BadRequest("Invalid user.");
+
             var data = await _employeeService.CreateEmployee(dto);
             return Ok(data);
         }
 
-        [HttpPost("UpdateEmployee/{id}")]
-        public async Task<IActionResult> UpdateEmployee(int id, [FromBody] EmployeeMasterDto dto)
+        // ================= UPDATE =================
+        [HttpPost("UpdateEmployee/{id}/{userId}")]
+        public async Task<IActionResult> UpdateEmployee(int id, int userId, [FromBody] EmployeeMasterDto dto)
         {
-            var data = await _employeeService.UpdateEmployee(id, dto);
-            if (data == null) return NotFound();
+            var data = await _employeeService.UpdateEmployee(id, dto, userId);
+            if (data == null)
+                return NotFound("Record not found or not authorized.");
+
             return Ok(data);
         }
 
-        [HttpPost("DeleteEmployee")]
-        public async Task<IActionResult> DeleteEmployee([FromQuery] int id)
+        // ================= DELETE =================
+        [HttpPost("DeleteEmployee/{id}/{userId}")]
+        public async Task<IActionResult> DeleteEmployee(int id, int userId)
         {
-            var success = await _employeeService.DeleteEmployee(id);
-            if (!success) return NotFound();
+            var success = await _employeeService.DeleteEmployee(id, userId);
+            if (!success)
+                return NotFound("Record not found or not authorized.");
+
             return Ok(new { message = "Deleted successfully" });
         }
 
-        [HttpGet("GetManagers")]
-        public async Task<IActionResult> GetManagers()
+        // ================= MANAGERS =================
+        [HttpGet("GetManagers/{userId}")]
+        public async Task<IActionResult> GetManagers(int userId)
         {
-            var data = await _employeeService.GetManagers();
+            var data = await _employeeService.GetManagers(userId);
             return Ok(data);
         }
 

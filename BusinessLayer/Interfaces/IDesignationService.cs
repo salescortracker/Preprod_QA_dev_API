@@ -5,6 +5,8 @@ namespace BusinessLayer.Interfaces
 {
     public interface IDesignationService
     {
+        Task<ApiResponse<IEnumerable<DepartmentDropdownDto>>>
+    GetDepartmentsForDropdownAsync(int companyId, int regionId);
         Task<ApiResponse<IEnumerable<DesignationDTO>>> GetAllAsync(int userId);
         Task<ApiResponse<DesignationDTO?>> GetByIdAsync(int id);
         Task<ApiResponse<DesignationDTO>> CreateAsync(CreateUpdateDesignationDto dto);

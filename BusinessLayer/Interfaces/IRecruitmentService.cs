@@ -9,8 +9,18 @@ namespace BusinessLayer.Interfaces
 {
     public interface IRecruitmentService
     {
-        ///resume upload
+        ///resume upload <summary>
+        /// resume upload
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+
+        Task<IEnumerable<RecruitmentNoticePeriodDto>> GetNoticePeriodsAsync(int companyId, int regionId);
+        Task<IEnumerable<MaritalStatusDto>> GetMaritalStatusesAsync(int companyId, int regionId);
+
         Task<int> SaveCandidateAsync(CandidateDto dto);
+
+        Task<IEnumerable<object>> GetDesignationsWithDepartmentAsync(int companyId, int regionId);
 
         Task<IEnumerable<object>> GetCandidatesAsync(int userId, int companyId, int regionId);
 
@@ -25,8 +35,10 @@ namespace BusinessLayer.Interfaces
         Task<IEnumerable<object>> GetReferenceUsersAsync(int companyId, int regionId);
 
         /////////screening
+        ///
         Task<IEnumerable<object>> GetRecruitersAsync(int companyId, int regionId);
-
+     
+        Task<IEnumerable<ScreeningResultDto>> GetScreeningResultsAsync(int companyId, int regionId);
         Task<IEnumerable<object>> GetScreeningCandidatesTopTableAsync(
    int companyId,
    int regionId,
@@ -40,6 +52,7 @@ namespace BusinessLayer.Interfaces
         Task<bool> UpdateCandidateScreeningAsync(CandidateScreeningDto dto);
 
         //////////Interview
+        Task<IEnumerable<InterviewLevelDto>> GetInterviewLevelsAsync(int companyId, int regionId);
 
         Task<IEnumerable<object>> GetScreeningCandidatesTopTableInterviewAsync(
  int companyId,

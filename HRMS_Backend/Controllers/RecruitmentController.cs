@@ -15,6 +15,26 @@ namespace HRMS_Backend.Controllers
             _service = service;
 
         }
+        [HttpGet("GetDesignations/{companyId}/{regionId}")]
+        public async Task<IActionResult> GetDesignations(int companyId, int regionId)
+        {
+            var data = await _service.GetDesignationsWithDepartmentAsync(companyId, regionId);
+            return Ok(data);
+        }
+        [HttpGet("GetNoticePeriods/{companyId}/{regionId}")]
+        public async Task<IActionResult> GetNoticePeriods(int companyId, int regionId)
+        {
+            var data = await _service.GetNoticePeriodsAsync(companyId, regionId);
+            return Ok(data);
+        }
+        [HttpGet("GetMaritalStatuses/{companyId}/{regionId}")]
+        public async Task<IActionResult> GetMaritalStatuses(int companyId, int regionId)
+        {
+            var data = await _service.GetMaritalStatusesAsync(companyId, regionId);
+            return Ok(data);
+        }
+
+
         [HttpPost("SaveCandidate")]
         public async Task<IActionResult> SaveCandidate([FromForm] CandidateDto dto)
         {
@@ -94,6 +114,13 @@ namespace HRMS_Backend.Controllers
             var data = await _service.GetRecruitersAsync(companyId, regionId);
             return Ok(data);
         }
+        [HttpGet("GetScreeningResults/{companyId}/{regionId}")]
+        public async Task<IActionResult> GetScreeningResults(int companyId, int regionId)
+        {
+            var data = await _service.GetScreeningResultsAsync(companyId, regionId);
+            return Ok(data);
+        }
+
         [HttpGet("GetScreeningCandidatesTopTable")]
         public async Task<IActionResult> GetScreeningCandidatesTopTable(
 int companyId,
@@ -108,7 +135,7 @@ string designation)
         }
 
 
-        [HttpPost("SaveScreening")]
+        [HttpPost("SaveCandidateScreening")]
         public async Task<IActionResult> SaveScreening(
 [FromBody] CandidateScreeningDto dto)
         {
@@ -134,6 +161,13 @@ string designation)
 
 
         ////////////Interview
+        [HttpGet("GetInterviewLevels/{companyId}/{regionId}")]
+        public async Task<IActionResult> GetInterviewLevels(int companyId, int regionId)
+        {
+            var data = await _service.GetInterviewLevelsAsync(companyId, regionId);
+            return Ok(data);
+        }
+
         [HttpGet("GetScreeningCandidatesTopTableInterview")]
         public async Task<IActionResult> GetScreeningCandidatesTopTableInterview(
 int companyId,
@@ -176,6 +210,10 @@ string designation)
 
             return Ok(new { message = "Interview updated successfully" });
         }
+
+
+
+        /// Appointment screen
 
         [HttpGet("GetAppointments/{companyId}/{regionId}/{interviewerId}")]
         public async Task<IActionResult> GetAppointments(
