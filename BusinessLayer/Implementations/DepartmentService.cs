@@ -26,7 +26,7 @@ namespace BusinessLayer.Implementations
                     
                     companyId = d.CompanyId,
                     regionId = d.RegionId,
-                    description = d.Description,
+                    //description = d.Description,
                     isActive = d.IsActive
                 });
                 return new ApiResponse<IEnumerable<DepartmentDto>>(dto, "Departments retrieved successfully.");
@@ -50,7 +50,7 @@ namespace BusinessLayer.Implementations
                     departmentId = d.DepartmentId,
                     companyId = d.CompanyId,
                     regionId = d.RegionId,
-                    description = d.Description,
+                    //description = d.Description,
                     isActive = d.IsActive
                 };
                 return new ApiResponse<DepartmentDto?>(dto, "Department retrieved.");
@@ -69,7 +69,7 @@ namespace BusinessLayer.Implementations
                     !d.IsDeleted &&
                     d.CompanyId == dto.companyId &&
                     d.RegionId == dto.regionId &&
-                    d.Description.ToLower() == dto.description.ToLower()))
+                    d.DepartmentName.ToLower() == dto.description.ToLower()))
                     .Any();
 
                 if (exists)
@@ -79,7 +79,7 @@ namespace BusinessLayer.Implementations
                 {
                     CompanyId = dto.companyId,
                     RegionId = dto.regionId,
-                    Description = dto.description,
+                    //Description = dto.description,
                     IsActive = dto.isActive,
                     UserId=dto.userId,
                    // CreatedBy =dto.userId,
@@ -94,7 +94,7 @@ namespace BusinessLayer.Implementations
                     departmentId = entity.DepartmentId,
                     companyId = entity.CompanyId,
                     regionId = entity.RegionId,
-                    description = entity.Description,
+                    //description = entity.Description,
                     isActive = entity.IsActive
                 };
 
@@ -119,14 +119,14 @@ namespace BusinessLayer.Implementations
                     d.DepartmentId != dto.departmentId &&
                     d.CompanyId == dto.companyId &&
                     d.RegionId == dto.regionId &&
-                    d.Description.ToLower() == dto.description.ToLower())).Any();
+                    d.DepartmentName.ToLower() == dto.description.ToLower())).Any();
 
                 if (dup)
                     return new ApiResponse<DepartmentDto>(null!, "Duplicate department exists.", false);
 
                 entity.CompanyId = dto.companyId;
                 entity.RegionId = dto.regionId;
-                entity.Description = dto.description;
+                //entity.Description = dto.description;
                 entity.IsActive = dto.isActive;
                 //entity.ModifiedBy = dto.userId;
                 entity.ModifiedAt = DateTime.UtcNow;
@@ -139,7 +139,7 @@ namespace BusinessLayer.Implementations
                     departmentId = entity.DepartmentId,
                     companyId = entity.CompanyId,
                     regionId = entity.RegionId,
-                    description = entity.Description,
+                    //description = entity.Description,
                     isActive = entity.IsActive
                 };
 
@@ -187,7 +187,7 @@ namespace BusinessLayer.Implementations
                             !d.IsDeleted &&
                             d.CompanyId == dto.companyId &&
                             d.RegionId == dto.regionId &&
-                            d.Description.ToLower() == dto.description.ToLower()))
+                            d.DepartmentName.ToLower() == dto.description.ToLower()))
                             .Any();
 
                         if (exists)
@@ -200,7 +200,7 @@ namespace BusinessLayer.Implementations
                         {
                             CompanyId = dto.companyId,
                             RegionId = dto.regionId,
-                            Description = dto.description,
+                            //Description = dto.description,
                             IsActive = dto.isActive,
                            // CreatedBy = createdBy,
                             CreatedAt = DateTime.UtcNow

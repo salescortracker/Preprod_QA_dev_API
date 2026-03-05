@@ -11,7 +11,7 @@ public partial class Department
 
     public int RegionId { get; set; }
 
-    public string Description { get; set; } = null!;
+    public string DepartmentName { get; set; } = null!;
 
     public bool IsActive { get; set; }
 
@@ -28,6 +28,8 @@ public partial class Department
     public int? UserId { get; set; }
 
     public virtual Company Company { get; set; } = null!;
+
+    public virtual ICollection<Designation> Designations { get; set; } = new List<Designation>();
 
     public virtual ICollection<ExpenseLimitConfig> ExpenseLimitConfigs { get; set; } = new List<ExpenseLimitConfig>();
 

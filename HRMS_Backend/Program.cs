@@ -1,6 +1,7 @@
 ﻿
 using BusinessLayer.Implementations;
 using BusinessLayer.Interfaces;
+using BusinessLayer.Interfaces.BusinessLayer.Interfaces;
 using DataAccessLayer.DBContext;
 using DataAccessLayer.Repositories.GeneralRepository;
 using Microsoft.EntityFrameworkCore;
@@ -41,7 +42,7 @@ builder.Services.AddScoped<IDesignationService, DesignationService>();
 builder.Services.AddScoped<ICaptchaService, CaptchaService>();
 builder.Services.AddScoped<IGenderService, GenderService>();
 builder.Services.AddScoped<IEmployeeResignationService, EmployeeResignationService>();
-builder.Services.AddScoped<IPerformanceService, PerformanceService>();
+//builder.Services.AddScoped<IPerformanceService, PerformanceService>();
 builder.Services.AddScoped<IPolicyCategoryService, PolicyCategoryService>();
 builder.Services.AddScoped<ICompanyPolicyService, CompanyPolicyService>();
 builder.Services.AddScoped<IResignationService, ResignationService>();
@@ -89,6 +90,9 @@ builder.Services.AddScoped<ISalaryStructureService, SalaryStructureService>();
 builder.Services.AddScoped<IEmployeeSalaryService, EmployeeSalaryService>();
 builder.Services.AddScoped<IPayrollService, PayrollService>();
 builder.Services.AddScoped<IEventService, EventService>();
+//builder.Services.AddScoped<ICompanyNewsPolicyService, CompanyNewsPolicyService>();
+builder.Services.AddScoped<ICompanyNewsPolicyService, CompanyNewsPolicyService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
