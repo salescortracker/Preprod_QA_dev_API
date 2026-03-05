@@ -1,5 +1,7 @@
 ﻿using BusinessLayer.DTOs;
+using BusinessLayer.Implementations;
 using BusinessLayer.Interfaces;
+using BusinessLayer.Interfaces.BusinessLayer.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HRMS_Backend.Controllers
@@ -29,7 +31,15 @@ namespace HRMS_Backend.Controllers
         private readonly IPolicyCategoryService _policyCategoryService;
         private readonly IResignationService _resignationService;
         private readonly IEventService _Eventservice;
-        public MasterDataController(IEventService Eventservice,IResignationService resignationService,IPolicyCategoryService policyCategoryService,ILeaveStatusService leaveStatusService,IHolidayListService holidayListService, IWeekoffService weekoffService,IAttendanceStatusService attendanceStatusService, IExpenseCategoryService expenseCategoryservice,IDepartmentService service, IDesignationService designationService, IGenderService genderService,IadminService adminService, ILeaveTypeService leaveTypeService,  ILogger<MasterDataController> logger, IKpiCategoryService kpiCategoryService, IEmployeeMasterService employeeService, ICertificationTypeService certificationTypeService, IAssetStatusService assetStatusService, IBloodGroupService bloodGroupService, IHelpdeskCategoryAdminService helpdeskCategoryAdminService, IProjectStatusAdminService projectStatusAdminService, IPriorityService priorityService)
+        private readonly ICompanyNewsPolicyService _companyNewsPolicyService;
+        public MasterDataController(IEventService Eventservice,IResignationService resignationService,
+            IPolicyCategoryService policyCategoryService,ILeaveStatusService leaveStatusService,IHolidayListService holidayListService, 
+            IWeekoffService weekoffService,IAttendanceStatusService attendanceStatusService, IExpenseCategoryService expenseCategoryservice,
+            IDepartmentService service, IDesignationService designationService, IGenderService genderService,IadminService adminService, 
+            ILeaveTypeService leaveTypeService,  ILogger<MasterDataController> logger, IKpiCategoryService kpiCategoryService, 
+            IEmployeeMasterService employeeService, ICertificationTypeService certificationTypeService, IAssetStatusService assetStatusService,
+            IBloodGroupService bloodGroupService, IHelpdeskCategoryAdminService helpdeskCategoryAdminService, IProjectStatusAdminService projectStatusAdminService, 
+            IPriorityService priorityService, ICompanyNewsPolicyService companyNewsPolicyService)
         {
             _service = service;
             _Eventservice = Eventservice;
@@ -53,6 +63,7 @@ namespace HRMS_Backend.Controllers
             _leaveStatusService = leaveStatusService;
             _policyCategoryService = policyCategoryService;
             _resignationService = resignationService;
+            _companyNewsPolicyService = companyNewsPolicyService;
         }
         #region Departments
         // ✅ GET ALL (with optional filters later)
@@ -529,41 +540,52 @@ namespace HRMS_Backend.Controllers
         //---------------------------------Employee Master Details---------------------------------//
         #region Employee Master Details
 
-
-        [HttpGet("GetAllEmployees")]
-        public async Task<IActionResult> GetAllEmployees()
+        // ================= GET ALL =================
+        [HttpGet("GetAllEmployees/{userId}")]
+        public async Task<IActionResult> GetAllEmployees(int userId)
         {
-            var data = await _employeeService.GetAllEmployees();
+            var data = await _employeeService.GetAllEmployees(userId);
             return Ok(data);
         }
 
+        // ================= CREATE =================
         [HttpPost("CreateEmployee")]
         public async Task<IActionResult> CreateEmployee([FromBody] EmployeeMasterDto dto)
         {
+            if (dto.CreatedBy == null || dto.CreatedBy <= 0)
+                return BadRequest("Invalid user.");
+
             var data = await _employeeService.CreateEmployee(dto);
             return Ok(data);
         }
 
-        [HttpPost("UpdateEmployee/{id}")]
-        public async Task<IActionResult> UpdateEmployee(int id, [FromBody] EmployeeMasterDto dto)
+        // ================= UPDATE =================
+        [HttpPost("UpdateEmployee/{id}/{userId}")]
+        public async Task<IActionResult> UpdateEmployee(int id, int userId, [FromBody] EmployeeMasterDto dto)
         {
-            var data = await _employeeService.UpdateEmployee(id, dto);
-            if (data == null) return NotFound();
+            var data = await _employeeService.UpdateEmployee(id, dto, userId);
+            if (data == null)
+                return NotFound("Record not found or not authorized.");
+
             return Ok(data);
         }
 
-        [HttpPost("DeleteEmployee")]
-        public async Task<IActionResult> DeleteEmployee([FromQuery] int id)
+        // ================= DELETE =================
+        [HttpPost("DeleteEmployee/{id}/{userId}")]
+        public async Task<IActionResult> DeleteEmployee(int id, int userId)
         {
-            var success = await _employeeService.DeleteEmployee(id);
-            if (!success) return NotFound();
+            var success = await _employeeService.DeleteEmployee(id, userId);
+            if (!success)
+                return NotFound("Record not found or not authorized.");
+
             return Ok(new { message = "Deleted successfully" });
         }
 
-        [HttpGet("GetManagers")]
-        public async Task<IActionResult> GetManagers()
+        // ================= MANAGERS =================
+        [HttpGet("GetManagers/{userId}")]
+        public async Task<IActionResult> GetManagers(int userId)
         {
-            var data = await _employeeService.GetManagers();
+            var data = await _employeeService.GetManagers(userId);
             return Ok(data);
         }
 
@@ -1295,5 +1317,128 @@ namespace HRMS_Backend.Controllers
 
             return Ok(new { message = "Event deleted successfully" });
         }
+
+        #region Company News APIs
+
+        [HttpGet("GetAllNews")]
+        public async Task<IActionResult> GetAllNews(int userId)
+        {
+            var result = await _companyNewsPolicyService.GetAllNewsAsync(userId);
+            return Ok(result);
+        }
+
+        [HttpGet("GetTodayNews")]
+        public async Task<IActionResult> GetTodayNews(int userId)
+        {
+            var result = await _companyNewsPolicyService.GetTodayNewsAsync(userId);
+            return Ok(result);
+        }
+
+        [HttpGet("GetNewsById")]
+        public async Task<IActionResult> GetNewsById(int id, int userId)
+        {
+            var result = await _companyNewsPolicyService.GetNewsByIdAsync(id, userId);
+            if (result == null) return NotFound();
+            return Ok(result);
+        }
+
+        [HttpPost("SaveNews")]
+        public async Task<IActionResult> SaveNews([FromBody] CompanyNewsMasterDto dto)
+        {
+            var result = await _companyNewsPolicyService.AddNewsAsync(dto);
+            return Ok(result);
+        }
+
+        [HttpPost("UpdateNews/{id}")]
+        public async Task<IActionResult> UpdateNews(int id, [FromBody] CompanyNewsMasterDto dto)
+        {
+            var result = await _companyNewsPolicyService.UpdateNewsAsync(id, dto);
+            return Ok(result);
+        }
+
+        [HttpDelete("DeleteNews/{id}")]
+        public async Task<IActionResult> DeleteNews(int id, int userId)
+        {
+            var result = await _companyNewsPolicyService.DeleteNewsAsync(id, userId);
+            if (!result) return NotFound();
+            return NoContent();
+        }
+
+        #endregion
+
+
+        #region Company Policies APIs
+
+        /// <summary>
+        /// Get all policies based on UserId
+        /// </summary>
+        [HttpGet("GetAllPolicies")]
+        public async Task<IActionResult> GetAllPolicies(int userId)
+        {
+            var result = await _companyNewsPolicyService.GetAllPoliciesAsync(userId);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Get only today's posted policies based on UserId
+        /// (Business Logic: PostedDate == Today AND IsActive == true)
+        /// </summary>
+        [HttpGet("GetTodayPolicies")]
+        public async Task<IActionResult> GetTodayPolicies(int userId)
+        {
+            var result = await _companyNewsPolicyService.GetTodayPoliciesAsync(userId);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Get policy by Id & UserId
+        /// </summary>
+        [HttpGet("GetPolicyById")]
+        public async Task<IActionResult> GetPolicyById(int id, int userId)
+        {
+            var result = await _companyNewsPolicyService.GetPolicyByIdAsync(id, userId);
+
+            if (result == null)
+                return NotFound();
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Create new policy
+        /// </summary>
+        [HttpPost("SavePolicy")]
+        public async Task<IActionResult> SavePolicy([FromBody] CompanyPolicyMasterDto dto)
+        {
+            var result = await _companyNewsPolicyService.AddPolicyAsync(dto);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Update existing policy
+        /// </summary>
+        [HttpPost("UpdatePolicy/{id}")]
+        public async Task<IActionResult> UpdatePolicy(int id, [FromBody] CompanyPolicyMasterDto dto)
+        {
+            var result = await _companyNewsPolicyService.UpdatePolicyAsync(id, dto);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Delete policy based on Id & UserId
+        /// </summary>
+        [HttpDelete("DeletePolicy/{id}")]
+        public async Task<IActionResult> DeletePolicy(int id, int userId)
+        {
+            var result = await _companyNewsPolicyService.DeletePolicyAsync(id, userId);
+
+            if (!result)
+                return NotFound();
+
+            return NoContent();
+        }
+
+        #endregion
+
     }
 }

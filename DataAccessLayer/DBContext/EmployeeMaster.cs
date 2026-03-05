@@ -25,6 +25,10 @@ public partial class EmployeeMaster
 
     public int? RoleId { get; set; }
 
+    public int? CompanyId { get; set; }
+
+    public int? RegionId { get; set; }
+
     public virtual User? CreatedByNavigation { get; set; }
 
     public virtual ICollection<EmployeeDailyWorkingHourHeader> EmployeeDailyWorkingHourHeaders { get; set; } = new List<EmployeeDailyWorkingHourHeader>();

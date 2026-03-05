@@ -498,14 +498,13 @@ namespace HRMS_Backend.Controllers
 
             var success = await _companyNewsService.DeleteCompanyNewsAsync(id, userId);
 
-            if (!success)
-                return Forbid("Only admins can delete company news.");
+            //if (!success)
+            //    return Forbid("Only admins can delete company news.");
 
             return Ok("News Deleted Successfully");
         }
-
-
         #endregion
+
         //--------------------------company policy-------------------------------------//
 
         #region

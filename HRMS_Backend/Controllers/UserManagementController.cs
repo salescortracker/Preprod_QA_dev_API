@@ -812,7 +812,7 @@ namespace HRMS_Backend.Controllers
         #region Marital Status
 
         // POST: api/MaritalStatus/get-all
-        [HttpPost("getall")]
+        [HttpPost("getallMaritalStatus")]
         public async Task<IActionResult> GetAllMaritalStatus(int UserId)
         {
             var data = await _maritalStatusService.GetAllAsync(UserId);
@@ -903,10 +903,10 @@ namespace HRMS_Backend.Controllers
         #region Employee Master Details
 
 
-        [HttpGet("GetAllEmployees")]
-        public async Task<IActionResult> GetAllEmployees()
+        [HttpGet("GetAllEmployees/{userId}")]
+        public async Task<IActionResult> GetAllEmployees(int userId)
         {
-            var data = await _employeeService.GetAllEmployees();
+            var data = await _employeeService.GetAllEmployees(userId);
             return Ok(data);
         }
 
@@ -917,26 +917,26 @@ namespace HRMS_Backend.Controllers
             return Ok(data);
         }
 
-        [HttpPost("UpdateEmployee/{id}")]
-        public async Task<IActionResult> UpdateEmployee(int id, [FromBody] EmployeeMasterDto dto)
+        [HttpPost("UpdateEmployee/{id}/{userId}")]
+        public async Task<IActionResult> UpdateEmployee(int id, int userId, [FromBody] EmployeeMasterDto dto)
         {
-            var data = await _employeeService.UpdateEmployee(id, dto);
+            var data = await _employeeService.UpdateEmployee(id, dto, userId);
             if (data == null) return NotFound();
             return Ok(data);
         }
 
-        [HttpPost("DeleteEmployee/{id}")]
-        public async Task<IActionResult> DeleteEmployee(int id)
+        [HttpPost("DeleteEmployee/{id}/{userId}")]
+        public async Task<IActionResult> DeleteEmployee(int id, int userId)
         {
-            var success = await _employeeService.DeleteEmployee(id);
+            var success = await _employeeService.DeleteEmployee(id, userId);
             if (!success) return NotFound();
             return Ok(new { message = "Deleted successfully" });
         }
 
-        [HttpGet("GetManagers")]
-        public async Task<IActionResult> GetManagers()
+        [HttpGet("GetManagers/{userId}")]
+        public async Task<IActionResult> GetManagers(int userId)
         {
-            var data = await _employeeService.GetManagers();
+            var data = await _employeeService.GetManagers(userId);
             return Ok(data);
         }
 

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BusinessLayer.Implementations
 {
-    public class CompanyNewsService: ICompanyNewsService
+    public class CompanyNewsService : ICompanyNewsService
     {
         private readonly HRMSContext _context;
 
@@ -41,7 +41,7 @@ namespace BusinessLayer.Implementations
             if (role == null || role.RoleName?.ToLower() != "admin")
                 return false;
 
-            var news = new CompanyNews
+            var news = new CompanyNewsMaster
             {
                 Title = dto.Title,
                 Description = dto.Description,
@@ -58,7 +58,7 @@ namespace BusinessLayer.Implementations
                 UserId = createdByUserId
             };
 
-            _context.CompanyNews.Add(news);
+            _context.CompanyNewsMasters.Add(news);
             await _context.SaveChangesAsync();
 
             return true;
@@ -69,7 +69,7 @@ namespace BusinessLayer.Implementations
         // ------------------------------------------------------
         public async Task<List<CompanyNewsDto>> GetFilteredCompanyNewsAsync(string? category, DateTime? date)
         {
-            var query = _context.CompanyNews
+            var query = _context.CompanyNewsMasters
                 .Where(n => n.IsActive)
                 .AsQueryable();
 
@@ -88,8 +88,8 @@ namespace BusinessLayer.Implementations
                     Title = n.Title,
                     Category = n.Category,
                     Description = n.Description,
-                    FromDate = n.FromDate,
-                    ToDate = n.ToDate,
+                    //FromDate = n.FromDate,
+                    //ToDate = n.ToDate,
                     CompanyId = n.CompanyId,
                     RegionId = n.RegionId,
                     AttachmentName = n.AttachmentName,
@@ -118,7 +118,7 @@ namespace BusinessLayer.Implementations
             var role = await _context.RoleMasters.FirstOrDefaultAsync(r => r.RoleId == user.RoleId);
             if (user == null || role?.RoleName?.ToLower() != "admin") return false;
 
-            var news = await _context.CompanyNews.FirstOrDefaultAsync(n => n.NewsId == dto.NewsId);
+            var news = await _context.CompanyNewsMasters.FirstOrDefaultAsync(n => n.NewsId == dto.NewsId);
             if (news == null) return false;
 
             news.Title = dto.Title;
