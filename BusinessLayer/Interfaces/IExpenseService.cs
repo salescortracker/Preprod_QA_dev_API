@@ -33,6 +33,6 @@ namespace BusinessLayer.Interfaces
         /// <summary>
         /// Retrieves all expenses for all users (no user filter).
         /// </summary>
-        Task<List<CreateExpenseDto>> GetAllExpensesAsync();
+        Task<List<CreateExpenseDto>> GetAllExpensesAsync(int userId);
     }
 }

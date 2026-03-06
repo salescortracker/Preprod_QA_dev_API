@@ -199,12 +199,12 @@ namespace HRMS_Backend.Controllers
             }
         }
 
-        [HttpGet("GetExpensesAll")]
-        public async Task<IActionResult> GetExpensesAll()
+        [HttpGet("GetExpensesAll/{userId}")]
+        public async Task<IActionResult> GetExpensesAll(int userId)
         {
             try
             {
-                var expenses = await _expenseService.GetAllExpensesAsync();
+                var expenses = await _expenseService.GetAllExpensesAsync(userId);
 
                 return Ok(new
                 {
