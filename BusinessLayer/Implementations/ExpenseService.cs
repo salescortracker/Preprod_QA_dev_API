@@ -258,17 +258,20 @@ namespace BusinessLayer.Implementations
                 .Select(x => new ExpenseCategoryDto
                 {
                     ExpenseCategoryID = x.ExpenseCategoryId,
-                    ExpenseCategoryName = x.ExpenseCategoryName
+                    ExpenseCategoryName = x.ExpenseCategoryName,
+                    CompanyId = x.CompanyId,
+                    RegionId = x.RegionId
                 })
                 .ToListAsync();
         }
-        public async Task<List<CreateExpenseDto>> GetAllExpensesAsync()
+        public async Task<List<CreateExpenseDto>> GetAllExpensesAsync(int userId)
         {
             var expenses = await _context.Expenses
-                .AsNoTracking()
-                .Include(e => e.ExpenseCategory) // Include category info
-                .OrderByDescending(e => e.CreatedDate)
-                .ToListAsync();
+        .AsNoTracking()
+        .Where(e => e.UserId == userId)   
+        .Include(e => e.ExpenseCategory)
+        .OrderByDescending(e => e.CreatedDate)
+        .ToListAsync();
 
             return expenses.Select(e => new CreateExpenseDto
             {
