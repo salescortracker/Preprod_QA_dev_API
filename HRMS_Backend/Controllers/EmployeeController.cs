@@ -20,7 +20,8 @@ namespace HRMS_Backend.Controllers
         private readonly IManagerKpiReviewService _managerReviewService;
         private readonly IEmailService _emailService;
         private readonly HRMSContext _context;
-        public EmployeeController(IEmployeeResignationService resignationService,IShiftAllocationService shiftAllocationService,  IemployeeService employeeService, ILeaveService leaveService, IWebHostEnvironment env, IEmployeeKpiService kpiService, IManagerKpiReviewService managerReviewService, IEmailService emailService, HRMSContext context)
+        private readonly IDashboardService _dashboardService;
+        public EmployeeController(IEmployeeResignationService resignationService,IShiftAllocationService shiftAllocationService,  IemployeeService employeeService, ILeaveService leaveService, IWebHostEnvironment env, IEmployeeKpiService kpiService, IManagerKpiReviewService managerReviewService, IEmailService emailService, HRMSContext context, IDashboardService dashboardService)
         {
             _resignationService = resignationService;
             _employeeService = employeeService;
@@ -31,6 +32,7 @@ namespace HRMS_Backend.Controllers
             _kpiService = kpiService;
             _context = context;
             _managerReviewService = managerReviewService;
+            _dashboardService = dashboardService;
         }
 
         #region Employee Resignation Details
@@ -2401,5 +2403,17 @@ public class UpdateResignationStatusRequest
             return Ok(data);
         }
 
+
+
+        #region DashBoard
+
+        [HttpGet("GetDashboardEmployees")]
+        public async Task<IActionResult> GetDashboardEmployees(int companyId)
+        {
+            var result = await _dashboardService.GetDashboardEmployees(companyId);
+            return Ok(result);
+        }
+
+        #endregion
     }
 }
