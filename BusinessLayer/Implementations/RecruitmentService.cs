@@ -9,12 +9,42 @@ namespace BusinessLayer.Implementations
     public class RecruitmentService: IRecruitmentService
     {
         private readonly IUnitOfWork _unitOfWork;
-
-        public RecruitmentService(IUnitOfWork unitOfWork)
+        private readonly IEmailService _emailService;
+        public RecruitmentService(IUnitOfWork unitOfWork, IEmailService emailService)
         {
             _unitOfWork = unitOfWork;
+            _emailService = emailService;
         }
-      
+        public async Task<IEnumerable<object>> GetDesignationsWithDepartmentAsync(int companyId, int regionId)
+        {
+            // Get designations
+            var designations = await _unitOfWork.Repository<Designation>()
+                .FindAsync(x =>
+                    x.CompanyId == companyId &&
+                    x.RegionId == regionId &&
+                    x.IsActive &&
+                    !x.IsDeleted);
+
+            // Get departments
+            var departments = await _unitOfWork.Repository<Department>()
+                .FindAsync(x => x.IsActive && !x.IsDeleted);
+
+            // Join manually
+            var result = from d in designations
+                         join dep in departments
+                         on d.DepartmentId equals dep.DepartmentId into deptGroup
+                         from dep in deptGroup.DefaultIfEmpty()
+                         select new
+                         {
+                             designationId = d.DesignationId,
+                             designationName = d.DesignationName,
+                             departmentId = d.DepartmentId,
+                             departmentName = dep != null ? dep.DepartmentName : ""
+                         };
+
+            return result;
+        }
+
         public async Task<int> SaveCandidateAsync(CandidateDto dto)
         {
             int year = DateTime.Now.Year;
@@ -94,8 +124,8 @@ namespace BusinessLayer.Implementations
                         RegionId = dto.RegionId,
                         CompanyId = dto.CompanyId,
                         UserId = dto.UserId,
-                        FromYear = e.FromYear,
-                        ToYear = e.ToYear,
+                        //FromYear = e.FromYear,
+                        //ToYear = e.ToYear,
                         Designation = e.Designation,
                         Organization = e.Organization,
                         CreatedAt = DateTime.Now,
@@ -240,8 +270,8 @@ namespace BusinessLayer.Implementations
                 Reason = candidate.Reason,
                 Experiences = experiences.Select(e => new CandidateExperienceDto
                 {
-                    FromYear = e.FromYear,
-                    ToYear = e.ToYear,
+                    //FromYear = e.FromYear,
+                    //ToYear = e.ToYear,
                     Designation = e.Designation,
                     Organization = e.Organization
                 }).ToList(),
@@ -295,8 +325,8 @@ namespace BusinessLayer.Implementations
                     .AddRangeAsync(exp!.Select(e => new CandidateExperience
                     {
                         CandidateId = dto.CandidateId,
-                        FromYear = e.FromYear,
-                        ToYear = e.ToYear,
+                        //FromYear = e.FromYear,
+                        //ToYear = e.ToYear,
                         Designation = e.Designation,
                         Organization = e.Organization,
                         CreatedAt = DateTime.Now
@@ -737,6 +767,380 @@ string designation)
                 Status = candidate.StageId, // you can map this in UI
                 DateToJoin = DateTime.Now.AddDays(15) // or null if not stored
             };
+        }
+
+
+
+
+
+
+
+
+        public async Task<IEnumerable<object>> GetOfferCandidatesTopTableAsync(
+int companyId,
+int regionId,
+string department,
+string designation)
+        {
+            var candidates = await _unitOfWork.Repository<Candidate>()
+                .FindAsync(c =>
+                    c.CompanyId == companyId &&
+                    c.RegionId == regionId &&
+                    c.StageId == 5 &&
+                    c.Department == department &&
+                    c.Designation == designation &&
+                    c.IsActive
+                );
+
+            return candidates.Select(c => new
+            {
+                c.CandidateId,
+                c.SeqNo,
+                Name = string.IsNullOrEmpty(c.LastName)
+                        ? c.FirstName
+                        : $"{c.FirstName} {c.LastName}",
+                c.Mobile,
+                Expected = c.ExpectedSalary
+            });
+        }
+
+        public async Task<bool> SaveCandidateOfferAsync(CandidateOfferDto dto)
+        {
+            using var tx = await _unitOfWork.BeginTransactionAsync();
+
+            try
+            {
+                var offer = new CandidateOffer
+                {
+                    RegionId = dto.RegionId,
+                    CompanyId = dto.CompanyId,
+                    UserId = dto.UserId,
+                    CandidateId = dto.CandidateId,
+                    OfferedCtc = dto.OfferedCtc,
+                    ExpectedDoj = DateOnly.FromDateTime(dto.ExpectedDoj),
+                    OfferStatus = dto.OfferStatus,
+                    Hrname = dto.HrName,
+                    OfferLetterPath = dto.OfferLetterPath,
+                    FilePath = dto.FilePath,
+                    CreatedBy = dto.UserId,
+                    CreatedAt = DateTime.Now
+                };
+
+                await _unitOfWork.Repository<CandidateOffer>().AddAsync(offer);
+
+                // 🔥 Move candidate to Onboarding stage (Stage = 6)
+                var candidateRepo = _unitOfWork.Repository<Candidate>();
+                var candidate = await candidateRepo.GetByIdAsync(dto.CandidateId);
+
+                if (candidate == null)
+                    throw new Exception("Candidate not found");
+
+                candidate.StageId = 6; // ✅ Onboarding
+                candidate.ModifiedAt = DateTime.Now;
+                candidate.ModifiedBy = dto.UserId;
+
+                candidateRepo.Update(candidate);
+
+                await _unitOfWork.CompleteAsync();
+                await tx.CommitAsync();
+
+                return true;
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<CandidateOfferDto>> GetOfferRecordsAsync(
+    int userId,
+    int companyId,
+    int regionId)
+        {
+            var offers = await _unitOfWork.Repository<CandidateOffer>()
+                .FindAsync(x =>
+                    x.CompanyId == companyId &&
+                    x.RegionId == regionId &&
+                    x.UserId == userId
+                );
+
+            if (!offers.Any())
+                return Enumerable.Empty<CandidateOfferDto>();
+
+            var candidateIds = offers.Select(x => x.CandidateId).Distinct().ToList();
+
+            var candidates = await _unitOfWork.Repository<Candidate>()
+                .FindAsync(x => candidateIds.Contains(x.CandidateId));
+
+            return offers
+                .OrderByDescending(x => x.CreatedAt)
+                .Select(o =>
+                {
+                    var candidate = candidates.First(c => c.CandidateId == o.CandidateId);
+
+                    return new CandidateOfferDto
+                    {
+                        OfferId = o.OfferId,
+                        CandidateId = o.CandidateId,
+                        OfferedCtc = o.OfferedCtc,
+                        ExpectedDoj = o.ExpectedDoj.ToDateTime(TimeOnly.MinValue),
+                        OfferStatus = o.OfferStatus,
+                        HrName = o.Hrname,
+                        StageId = candidate.StageId,
+
+                        SeqNo = candidate.SeqNo,
+                        CandidateName = string.IsNullOrEmpty(candidate.LastName)
+                            ? candidate.FirstName
+                            : $"{candidate.FirstName} {candidate.LastName}",
+                        Designation = candidate.Designation
+                    };
+                });
+        }
+
+        public async Task<IEnumerable<object>> GetHRUsersAsync(int companyId, int regionId)
+        {
+            var users = await _unitOfWork.Repository<User>()
+                .FindAsync(x =>
+                    x.CompanyId == companyId &&
+                    x.RegionId == regionId &&
+                    x.RoleId == 4 &&              // 🔥 HR ROLE
+                    x.Status == "Active"
+                );
+
+            return users.Select(u => new
+            {
+                u.UserId,
+                u.FullName
+            });
+        }
+
+        public async Task<bool> SendOfferLetterAsync(int offerId)
+        {
+            var offerRepo = _unitOfWork.Repository<CandidateOffer>();
+            var candidateRepo = _unitOfWork.Repository<Candidate>();
+
+            var offer = await offerRepo.GetByIdAsync(offerId);
+            if (offer == null) throw new Exception("Offer not found");
+
+            var candidate = await candidateRepo.GetByIdAsync(offer.CandidateId);
+            if (candidate == null) throw new Exception("Candidate not found");
+
+            // ===== FILE SAVE (HTML OFFER LETTER) =====
+            string root = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Uploads", "OfferLetters");
+            if (!Directory.Exists(root)) Directory.CreateDirectory(root);
+
+            string fileName = $"Offer_{candidate.FirstName}_{offer.OfferId}.html";
+            string fullPath = Path.Combine(root, fileName);
+
+            string html = $@"
+<!DOCTYPE html>
+<html>
+<body style='font-family:Segoe UI'>
+  <h2>Offer Letter</h2>
+  <p>Dear {candidate.FirstName},</p>
+  <p>We are pleased to offer you the position of <b>{candidate.Designation}</b>.</p>
+  <p><b>CTC:</b> {offer.OfferedCtc}</p>
+  <p><b>Date of Joining:</b> {offer.ExpectedDoj:dd-MMM-yyyy}</p>
+  <p><b>HR:</b> {offer.Hrname}</p>
+  <p>Regards,<br/>HR Team</p>
+</body>
+</html>";
+
+            await File.WriteAllTextAsync(fullPath, html);
+
+            // ===== SAVE PATH =====
+            offer.OfferLetterPath = $"Uploads/OfferLetters/{fileName}";
+            offerRepo.Update(offer);
+            await _unitOfWork.CompleteAsync();
+
+            // ===== EMAIL WITH DOWNLOAD LINK =====
+            string downloadUrl = $"https://localhost:44370/{offer.OfferLetterPath}";
+
+            string subject = "Offer Letter – Cortracker HRMS";
+            string body = $@"
+<p>Dear {candidate.FirstName},</p>
+<p>Your offer letter is ready.</p>
+<p><a href='{downloadUrl}'>Click here to download your offer letter</a></p>
+<p>Regards,<br/>HR Team</p>";
+
+            await _emailService.SendEmailAsync(candidate.Email, subject, body);
+
+            return true;
+        }
+
+
+        public async Task<(byte[] fileBytes, string fileName)> DownloadOfferLetterAsync(int offerId)
+        {
+            var offer = await _unitOfWork.Repository<CandidateOffer>().GetByIdAsync(offerId);
+            if (offer == null || string.IsNullOrEmpty(offer.OfferLetterPath))
+                throw new Exception("Offer letter not found");
+
+            string fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", offer.OfferLetterPath);
+            var bytes = await File.ReadAllBytesAsync(fullPath);
+
+            return (bytes, Path.GetFileName(fullPath));
+        }
+
+
+
+
+        //OnBoarding 
+
+
+        public async Task<IEnumerable<object>> GetOnboardingCandidatesTopTableAsync(
+int companyId,
+int regionId,
+string department,
+string designation)
+        {
+            var candidates = await _unitOfWork.Repository<Candidate>()
+                .FindAsync(c =>
+                    c.CompanyId == companyId &&
+                    c.RegionId == regionId &&
+                    c.StageId == 6 &&                 // 🔥 ONLY SCREENING
+                    c.Department == department &&
+                    c.Designation == designation &&
+                    c.IsActive
+                );
+
+            return candidates.Select(c => new
+            {
+                c.CandidateId,
+                c.SeqNo,
+                Name = string.IsNullOrEmpty(c.LastName)
+                        ? c.FirstName
+                        : $"{c.FirstName} {c.LastName}",
+                c.Mobile,
+                Expected = c.ExpectedSalary
+            });
+        }
+        public async Task<int> SaveCandidateOnboardingAsync(CandidateOnboardingDTO dto)
+        {
+            using var tx = await _unitOfWork.BeginTransactionAsync();
+
+            try
+            {
+                var repo = _unitOfWork.Repository<CandidateOnboarding>();
+
+                var existing = (await repo.FindAsync(x =>
+                    x.CandidateId == dto.CandidateId &&
+                    x.CompanyId == dto.CompanyId &&
+                    x.RegionId == dto.RegionId))
+                    .FirstOrDefault();
+
+                if (existing == null)
+                {
+                    var entity = new CandidateOnboarding
+                    {
+                        RegionId = dto.RegionId,
+                        CompanyId = dto.CompanyId,
+                        UserId = dto.UserId,
+                        CandidateId = dto.CandidateId,
+                        JoiningDate = dto.JoiningDate.HasValue ? DateOnly.FromDateTime(dto.JoiningDate.Value) : null,
+
+
+                        DocumentsCollected = dto.DocumentsCollected,
+                        BackgroundCheckStatus = dto.BackgroundCheckStatus,
+                        LaptopIssued = dto.LaptopIssued,
+                        BuddyAssigned = dto.BuddyAssigned,
+                        OnboardingStatus = (dto.DocumentsCollected && dto.BackgroundCheckStatus == "Clear")
+                            ? "Completed"
+                            : "InProgress",
+                        CreatedAt = DateTime.Now,
+                        CreatedBy = dto.UserId
+                    };
+
+                    await repo.AddAsync(entity);
+                    await _unitOfWork.CompleteAsync();
+
+                    // ✅ Move candidate to Stage 7 (Onboarding)
+                    var candidate = await _unitOfWork.Repository<Candidate>()
+                        .GetByIdAsync(dto.CandidateId);
+
+                    if (candidate != null)
+                    {
+                        candidate.StageId = 7;
+                        candidate.ModifiedAt = DateTime.Now;
+                        candidate.ModifiedBy = dto.UserId;
+                        await _unitOfWork.CompleteAsync();
+                    }
+
+                    await tx.CommitAsync();
+                    return entity.OnboardingId;
+                }
+                else
+                {
+                    existing.JoiningDate = dto.JoiningDate.HasValue
+                        ? DateOnly.FromDateTime(dto.JoiningDate.Value)
+                        : null;
+                    existing.DocumentsCollected = dto.DocumentsCollected;
+                    existing.BackgroundCheckStatus = dto.BackgroundCheckStatus;
+                    existing.LaptopIssued = dto.LaptopIssued;
+                    existing.BuddyAssigned = dto.BuddyAssigned;
+                    existing.OnboardingStatus = (dto.DocumentsCollected && dto.BackgroundCheckStatus == "Clear")
+                        ? "Completed"
+                        : "InProgress";
+                    existing.ModifiedAt = DateTime.Now;
+                    existing.ModifiedBy = dto.UserId;
+
+                    await _unitOfWork.CompleteAsync();
+
+                    // ✅ Ensure stage is still 7 on update
+                    var candidate = await _unitOfWork.Repository<Candidate>()
+                        .GetByIdAsync(dto.CandidateId);
+
+                    if (candidate != null && candidate.StageId != 7)
+                    {
+                        candidate.StageId = 7;
+                        candidate.ModifiedAt = DateTime.Now;
+                        candidate.ModifiedBy = dto.UserId;
+                        await _unitOfWork.CompleteAsync();
+                    }
+
+                    await tx.CommitAsync();
+                    return existing.OnboardingId;
+                }
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
+        }
+
+
+        public async Task<IEnumerable<object>> GetOnboardedCandidatesAsync(int companyId, int regionId)
+        {
+            var result = await _unitOfWork.Repository<CandidateOnboarding>()
+                .FindAsync(x => x.CompanyId == companyId && x.RegionId == regionId);
+
+            var candidateRepo = _unitOfWork.Repository<Candidate>();
+
+            var candidates = await candidateRepo.FindAsync(c =>
+                c.CompanyId == companyId &&
+                c.RegionId == regionId &&
+                c.IsActive);
+
+            return result.Select(o =>
+            {
+                var cand = candidates.FirstOrDefault(c => c.CandidateId == o.CandidateId);
+                return new
+                {
+                    o.CandidateId,
+                    Name = cand != null
+                        ? string.IsNullOrEmpty(cand.LastName)
+                            ? cand.FirstName
+                            : $"{cand.FirstName} {cand.LastName}"
+                        : "",
+                    o.JoiningDate,
+                    DocsCollected = o.DocumentsCollected,
+                    BgCheck = o.BackgroundCheckStatus,
+                    Laptop = o.LaptopIssued,
+                    Buddy = o.BuddyAssigned,
+                    Stage = cand?.StageId ?? 0   // ✅ REAL stage (7)
+                };
+            });
         }
     }
 }
