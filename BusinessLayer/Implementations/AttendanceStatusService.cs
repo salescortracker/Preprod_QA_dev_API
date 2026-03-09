@@ -25,11 +25,11 @@ namespace BusinessLayer.Implementations
 
         #region Get All
         public async Task<ApiResponse<IEnumerable<AttendanceStatusDto>>>
-            GetAllAsync(int companyId, int regionId)
+            GetAllAttendanceStatusAsync(int CreatedBy)
         {
             try
             {
-                if (companyId <= 0 || regionId <= 0)
+                if (CreatedBy <= 0 )
                     return new ApiResponse<IEnumerable<AttendanceStatusDto>>(
                         null, "Invalid company or region id", false);
 
@@ -38,8 +38,8 @@ namespace BusinessLayer.Implementations
                     .GetAllAsync();
 
                 var result = data
-                    .Where(x => x.CompanyId == companyId &&
-                                x.RegionId == regionId &&
+                    .Where(x => x.CreatedBy == CreatedBy &&
+                             
                                 !x.IsDeleted)
                     .Select(MapToDto)
                     .ToList();

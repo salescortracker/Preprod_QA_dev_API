@@ -15,13 +15,15 @@ namespace BusinessLayer.Implementations
             _context = context;
         }
 
-        public async Task<List<LeaveTypeDto>> GetLeaveTypesAsync()
+        public async Task<List<LeaveTypeDto>> GetLeaveTypesAsync(int userId)
         {
             return await (
                 from lt in _context.LeaveTypes
                 join c in _context.Companies on lt.CompanyId equals c.CompanyId
                 join r in _context.Regions on lt.RegionId equals r.RegionId
                 where !lt.IsDeleted
+                 && lt.UserId == userId
+
                 select new LeaveTypeDto
                 {
                     LeaveTypeID = lt.LeaveTypeId,
