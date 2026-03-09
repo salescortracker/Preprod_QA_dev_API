@@ -24,7 +24,7 @@ namespace BusinessLayer.Implementations
         public async Task<ApiResponse<IEnumerable<WeekoffDto>>> GetAll(int userId)
         {
             var list = (await _unitOfWork.Repository<Weekoff>()
-                .FindAsync(x => !x.IsDeleted && x.UserId == userId))
+                .FindAsync(x => !x.IsDeleted && (x.UserId == userId || x.UserId == null)))
                 .OrderByDescending(x => x.WeekoffId)
                 .ToList();
 
@@ -33,14 +33,14 @@ namespace BusinessLayer.Implementations
                 WeekoffID = x.WeekoffId,
                 CompanyID = x.CompanyId,
                 RegionID = x.RegionId,
-                WeekoffDate = x.Weekoff1,
+                WeekoffDate = DateOnly.Parse(x.WeekoffDate!),
                 IsActive = x.IsActive
             });
 
             return new ApiResponse<IEnumerable<WeekoffDto>>(dto, "Weekoff retrieved successfully.");
         }
 
-        // GET BY ID
+        //GET BY ID
         public async Task<ApiResponse<WeekoffDto?>> GetByIdAsync(int id)
         {
             var entity = await _unitOfWork.Repository<Weekoff>().GetByIdAsync(id);
@@ -53,8 +53,8 @@ namespace BusinessLayer.Implementations
                 WeekoffID = entity.WeekoffId,
                 CompanyID = entity.CompanyId,
                 RegionID = entity.RegionId,
-                WeekoffDate = entity.Weekoff1,
-                IsActive = entity.IsActive
+                WeekoffDate = DateOnly.Parse(entity.WeekoffDate!),
+               IsActive = entity.IsActive
             };
 
             return new ApiResponse<WeekoffDto?>(dto, "Weekoff retrieved successfully.");
@@ -67,7 +67,7 @@ namespace BusinessLayer.Implementations
                 !x.IsDeleted &&
                 x.CompanyId == dto.CompanyID &&
                 x.RegionId == dto.RegionID &&
-                x.Weekoff1 == dto.WeekoffDate))
+                x.WeekoffDate == dto.WeekoffDate.ToString("yyyy-MM-dd")))
                 .Any();
 
             if (duplicate)
@@ -77,7 +77,7 @@ namespace BusinessLayer.Implementations
             {
                 CompanyId = dto.CompanyID,
                 RegionId = dto.RegionID,
-                Weekoff1 = dto.WeekoffDate,
+                WeekoffDate = dto.WeekoffDate.ToString("yyyy-MM-dd"),
                 IsActive = dto.IsActive,
                 IsDeleted = false,
                 CreatedAt = DateTime.UtcNow,
@@ -102,7 +102,7 @@ namespace BusinessLayer.Implementations
 
             entity.CompanyId = dto.CompanyID;
             entity.RegionId = dto.RegionID;
-            entity.Weekoff1 = dto.WeekoffDate;
+            entity.WeekoffDate   = dto.WeekoffDate.ToString("yyyy-MM-dd");
             entity.IsActive = dto.IsActive;
             entity.ModifiedAt = DateTime.UtcNow;
             entity.ModifiedBy = dto.UserId;
