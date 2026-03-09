@@ -15,6 +15,12 @@ namespace HRMS_Backend.Controllers
             _service = service;
 
         }
+        [HttpGet("GetDesignations/{companyId}/{regionId}")]
+        public async Task<IActionResult> GetDesignations(int companyId, int regionId)
+        {
+            var data = await _service.GetDesignationsWithDepartmentAsync(companyId, regionId);
+            return Ok(data);
+        }
         [HttpPost("SaveCandidate")]
         public async Task<IActionResult> SaveCandidate([FromForm] CandidateDto dto)
         {
@@ -197,5 +203,92 @@ string designation)
             var data = await _service.GetAppointmentCandidateDetailsAsync(candidateId);
             return data == null ? NotFound() : Ok(data);
         }
+
+
+
+
+        [HttpGet("GetOfferCandidatesTopTable")]
+        public async Task<IActionResult> GetOfferCandidatesTopTable(
+int companyId,
+int regionId,
+string department,
+string designation)
+        {
+            var result = await _service
+                .GetOfferCandidatesTopTableAsync(companyId, regionId, department, designation);
+
+            return Ok(result);
+        }
+        [HttpPost("SaveCandidateOffer")]
+        public async Task<IActionResult> SaveCandidateOffer(
+    [FromBody] CandidateOfferDto dto)
+        {
+            var result = await _service.SaveCandidateOfferAsync(dto);
+
+            if (!result)
+                return BadRequest("Unable to save offer");
+
+            return Ok(new { message = "Offer saved successfully" });
+        }
+        [HttpGet("GetOfferRecords/{userId}/{companyId}/{regionId}")]
+        public async Task<IActionResult> GetOfferRecords(
+    int userId,
+    int companyId,
+    int regionId)
+        {
+            var data = await _service.GetOfferRecordsAsync(userId, companyId, regionId);
+            return Ok(data);
+        }
+
+        [HttpGet("GetHRUsers/{companyId}/{regionId}")]
+        public async Task<IActionResult> GetHRUsers(int companyId, int regionId)
+        {
+            var data = await _service.GetHRUsersAsync(companyId, regionId);
+            return Ok(data);
+        }
+
+        [HttpPost("SendOfferLetter/{offerId}")]
+        public async Task<IActionResult> SendOfferLetter(int offerId)
+        {
+            await _service.SendOfferLetterAsync(offerId);
+            return Ok(new { message = "Offer letter sent successfully" });
+        }
+
+        [HttpGet("DownloadOfferLetter/{offerId}")]
+        public async Task<IActionResult> DownloadOfferLetter(int offerId)
+        {
+            var (bytes, fileName) = await _service.DownloadOfferLetterAsync(offerId);
+            return File(bytes, "application/pdf", fileName);
+        }
+
+        //OnBoarding
+
+
+        [HttpGet("GetonboardingCandidatesTopTable")]
+        public async Task<IActionResult> getonboardingCandidatesTopTable(
+             int companyId,
+            int regionId,
+            string department,
+            string designation)
+        {
+            var result = await _service
+                .GetOnboardingCandidatesTopTableAsync(companyId, regionId, department, designation);
+
+            return Ok(result);
+        }
+
+        [HttpPost("SaveCandidateOnboarding")]
+        public async Task<IActionResult> SaveCandidateOnboarding([FromBody] CandidateOnboardingDTO dto)
+        {
+            int id = await _service.SaveCandidateOnboardingAsync(dto);
+            return Ok(new { message = "Onboarding saved successfully", onboardingId = id });
+        }
+        [HttpGet("GetOnboardedCandidates")]
+        public async Task<IActionResult> GetOnboardedCandidates(int companyId, int regionId)
+        {
+            var result = await _service.GetOnboardedCandidatesAsync(companyId, regionId);
+            return Ok(result);
+        }
+
     }
 }

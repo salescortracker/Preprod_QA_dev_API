@@ -11,7 +11,7 @@ namespace BusinessLayer.Interfaces
     {
         ///resume upload
         Task<int> SaveCandidateAsync(CandidateDto dto);
-
+        Task<IEnumerable<object>> GetDesignationsWithDepartmentAsync(int companyId, int regionId);
         Task<IEnumerable<object>> GetCandidatesAsync(int userId, int companyId, int regionId);
 
         Task<bool> MoveStageAsync(int candidateId, int stageId);
@@ -62,5 +62,41 @@ namespace BusinessLayer.Interfaces
             int interviewerId
         );
         Task<object?> GetAppointmentCandidateDetailsAsync(int candidateId);
+
+
+
+
+        //OfferLetter
+        Task<IEnumerable<object>> GetOfferCandidatesTopTableAsync(
+            int companyId,
+            int regionId,
+            string department,
+            string designation);
+        Task<bool> SaveCandidateOfferAsync(CandidateOfferDto dto);
+
+        Task<IEnumerable<CandidateOfferDto>> GetOfferRecordsAsync(
+            int userId,
+            int companyId,
+            int regionId);
+        Task<IEnumerable<object>> GetHRUsersAsync(int companyId, int regionId);
+
+        Task<bool> SendOfferLetterAsync(int offerId);
+        Task<(byte[] fileBytes, string fileName)> DownloadOfferLetterAsync(int offerId);
+
+        //OnBoarding
+
+        Task<IEnumerable<object>> GetOnboardingCandidatesTopTableAsync(
+             int companyId,
+             int regionId,
+             string department,
+             string designation);
+
+        Task<int> SaveCandidateOnboardingAsync(CandidateOnboardingDTO dto);
+
+        Task<IEnumerable<object>> GetOnboardedCandidatesAsync(int companyId, int regionId);
+
+
+
+
     }
 }
