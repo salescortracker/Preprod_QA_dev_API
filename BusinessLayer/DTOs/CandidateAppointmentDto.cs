@@ -16,5 +16,6 @@ namespace BusinessLayer.DTOs
         public string? Designation { get; set; }
         public string? Location { get; set; }
         public string? Description { get; set; }
+        public int LevelNo { get; set; }
     }
 }

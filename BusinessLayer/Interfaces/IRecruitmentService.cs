@@ -11,7 +11,10 @@ namespace BusinessLayer.Interfaces
     {
         ///resume upload
         Task<int> SaveCandidateAsync(CandidateDto dto);
+        Task<IEnumerable<RecruitmentNoticePeriodDto>> GetNoticePeriodsAsync(int companyId, int regionId);
+        Task<IEnumerable<object>> GetDesignationsWithDepartmentAsync(int companyId, int regionId);
 
+        Task<IEnumerable<MaritalStatusDto>> GetMaritalStatusesAsync(int companyId, int regionId);
         Task<IEnumerable<object>> GetCandidatesAsync(int userId, int companyId, int regionId);
 
         Task<bool> MoveStageAsync(int candidateId, int stageId);
@@ -47,6 +50,7 @@ namespace BusinessLayer.Interfaces
  string department,
  string designation
 );
+        Task<IEnumerable<InterviewLevelDto>> GetInterviewLevelsAsync(int companyId, int regionId);
         Task<bool> SaveCandidateInterviewAsync(CandidateInterviewDto dto);
 
         Task<IEnumerable<CandidateInterviewDto>> GetInterviewRecordsAsync(int userId,
@@ -56,11 +60,7 @@ namespace BusinessLayer.Interfaces
         Task<bool> UpdateCandidateInterviewAsync(CandidateInterviewDto dto);
 
         // Appointment Screen
-        Task<IEnumerable<CandidateAppointmentDto>> GetAppointmentsForInterviewerAsync(
-            int companyId,
-            int regionId,
-            int interviewerId
-        );
+        Task<IEnumerable<CandidateAppointmentDto>> GetAppointmentsForInterviewerAsync(int interviewerId);
         Task<object?> GetAppointmentCandidateDetailsAsync(int candidateId);
     }
 }

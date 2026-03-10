@@ -9,12 +9,82 @@ namespace BusinessLayer.Implementations
     public class RecruitmentService: IRecruitmentService
     {
         private readonly IUnitOfWork _unitOfWork;
-
-        public RecruitmentService(IUnitOfWork unitOfWork)
+        private readonly IEmailService _emailService;
+        public RecruitmentService(IUnitOfWork unitOfWork, IEmailService emailService)
         {
             _unitOfWork = unitOfWork;
+            _emailService = emailService;
         }
-      
+        public async Task<IEnumerable<object>> GetDesignationsWithDepartmentAsync(int companyId, int regionId)
+        {
+            // Get designations
+            var designations = await _unitOfWork.Repository<Designation>()
+                .FindAsync(x =>
+                    x.CompanyId == companyId &&
+                    x.RegionId == regionId &&
+                    x.IsActive &&
+                    !x.IsDeleted);
+
+            // Get departments
+            var departments = await _unitOfWork.Repository<Department>()
+                .FindAsync(x => x.IsActive && !x.IsDeleted);
+
+            // Join manually
+            var result = from d in designations
+                         join dep in departments
+                         on d.DepartmentId equals dep.DepartmentId into deptGroup
+                         from dep in deptGroup.DefaultIfEmpty()
+                         select new
+                         {
+                             designationId = d.DesignationId,
+                             designationName = d.DesignationName,
+                             departmentId = d.DepartmentId,
+                             departmentName = dep != null ? dep.DepartmentName : ""
+                         };
+
+            return result;
+        }
+        public async Task<IEnumerable<RecruitmentNoticePeriodDto>> GetNoticePeriodsAsync(int companyId, int regionId)
+        {
+            var data = await _unitOfWork.Repository<RecruitmentNoticePeriod>()
+                .FindAsync(x =>
+                    x.CompanyId == companyId &&
+                    x.RegionId == regionId &&
+                    x.IsActive &&
+                    !x.IsDeleted);
+
+            return data.Select(x => new RecruitmentNoticePeriodDto
+            {
+                RecruitmentNoticePeriodID = x.RecruitmentNoticePeriodId,
+                CompanyID = x.CompanyId,
+                RegionID = x.RegionId,
+                NoticePeriod = x.NoticePeriod,
+                IsActive = x.IsActive,
+                UserId = x.UserId
+            });
+        }
+        public async Task<IEnumerable<MaritalStatusDto>> GetMaritalStatusesAsync(int companyId, int regionId)
+        {
+            var data = await _unitOfWork.Repository<MaritalStatus>()
+                .FindAsync(x =>
+                    x.CompanyId == companyId &&
+                    x.RegionId == regionId &&
+                    x.IsActive &&
+                    !x.IsDeleted);
+
+            return data.Select(x => new MaritalStatusDto
+            {
+                MaritalStatusId = x.MaritalStatusId,
+                CompanyId = x.CompanyId,
+                RegionId = x.RegionId,
+                MaritalStatusName = x.MaritalStatusName,
+                Description = x.Description,
+                IsActive = x.IsActive,
+                UserId = x.UserId ?? 0
+            });
+        }
+
+
         public async Task<int> SaveCandidateAsync(CandidateDto dto)
         {
             int year = DateTime.Now.Year;
@@ -94,8 +164,8 @@ namespace BusinessLayer.Implementations
                         RegionId = dto.RegionId,
                         CompanyId = dto.CompanyId,
                         UserId = dto.UserId,
-                        FromYear = e.FromYear,
-                        ToYear = e.ToYear,
+                        FromDate = DateOnly.FromDateTime(e.FromDate),
+                        ToDate = DateOnly.FromDateTime(e.ToDate),
                         Designation = e.Designation,
                         Organization = e.Organization,
                         CreatedAt = DateTime.Now,
@@ -152,20 +222,21 @@ namespace BusinessLayer.Implementations
 
             return candidates.Select(c =>
             {
-                var stage = stages.First(s => s.StageId == c.StageId);
+                var stage = stages.FirstOrDefault(s => s.StageId == c.StageId);
 
                 return new
                 {
                     c.CandidateId,
                     c.SeqNo,
                     c.FirstName,
+                    c.LastName,
                     c.Email,
                     c.Mobile,
                     c.Designation,
                     c.AppliedDate,
                     c.FileName,
-                    StageName = stage.StageName,
-                    Progress = stage.ProgressPct
+                    StageName = stage?.StageName ?? "Unknown",
+                    Progress = stage?.ProgressPct ?? 0
                 };
             });
         }
@@ -240,8 +311,13 @@ namespace BusinessLayer.Implementations
                 Reason = candidate.Reason,
                 Experiences = experiences.Select(e => new CandidateExperienceDto
                 {
-                    FromYear = e.FromYear,
-                    ToYear = e.ToYear,
+                    FromDate = e.FromDate.HasValue
+? e.FromDate.Value.ToDateTime(TimeOnly.MinValue)
+: DateTime.MinValue,
+
+                    ToDate = e.ToDate.HasValue
+? e.ToDate.Value.ToDateTime(TimeOnly.MinValue)
+: DateTime.MinValue,
                     Designation = e.Designation,
                     Organization = e.Organization
                 }).ToList(),
@@ -261,14 +337,33 @@ namespace BusinessLayer.Implementations
                 .GetByIdAsync(dto.CandidateId);
 
             if (candidate == null) return false;
+            candidate.AppliedDate = dto.AppliedDate.HasValue
+       ? DateOnly.FromDateTime(dto.AppliedDate.Value)
+       : null;
 
             candidate.FirstName = dto.FirstName;
             candidate.LastName = dto.LastName;
             candidate.Email = dto.Email;
             candidate.Mobile = dto.Mobile;
+            candidate.Gender = dto.Gender;
+
+            candidate.DateOfBirth = dto.DateOfBirth.HasValue
+                ? DateOnly.FromDateTime(dto.DateOfBirth.Value)
+                : null;
+
+            candidate.MaritalStatus = dto.MaritalStatus;
+
+            candidate.CurrentSalary = dto.CurrentSalary;
+            candidate.ExpectedSalary = dto.ExpectedSalary; 
+
+            candidate.ReferenceSource = dto.ReferenceSource;
             candidate.Designation = dto.Designation;
             candidate.Department = dto.Department;
             candidate.Skills = dto.Skills;
+            candidate.NoticePeriod = dto.NoticePeriod;
+            candidate.AnyOffers = dto.AnyOffers;
+            candidate.Location = dto.Location;
+            candidate.Reason = dto.Reason;
             candidate.ModifiedAt = DateTime.Now;
 
             _unitOfWork.Repository<Candidate>().Update(candidate);
@@ -295,8 +390,8 @@ namespace BusinessLayer.Implementations
                     .AddRangeAsync(exp!.Select(e => new CandidateExperience
                     {
                         CandidateId = dto.CandidateId,
-                        FromYear = e.FromYear,
-                        ToYear = e.ToYear,
+                        FromDate = DateOnly.FromDateTime(e.FromDate),
+                        ToDate = DateOnly.FromDateTime(e.ToDate),
                         Designation = e.Designation,
                         Organization = e.Organization,
                         CreatedAt = DateTime.Now
@@ -413,7 +508,18 @@ string designation)
                 if (candidate == null)
                     throw new Exception("Candidate not found");
 
-                candidate.StageId = 3; // Interview
+                if (dto.ScreeningStatus == "Selected")
+                {
+                    candidate.StageId = 3;
+                }
+                else if (dto.ScreeningStatus == "Hold")
+                {
+                    candidate.StageId = 2;
+                }
+                else if (dto.ScreeningStatus == "Rejected")
+                {
+                    candidate.StageId = 12;
+                }
                 candidate.ModifiedAt = DateTime.Now;
                 candidate.ModifiedBy = dto.UserId;
 
@@ -435,7 +541,8 @@ string designation)
             var screenings = await _unitOfWork.Repository<CandidateScreening>()
                 .FindAsync(x =>
                     x.CompanyId == companyId &&
-                    x.RegionId == regionId
+                    x.RegionId == regionId &&
+                    x.UserId == userId
                 );
 
             if (!screenings.Any())
@@ -454,9 +561,8 @@ string designation)
                  .OrderByDescending(x => x.CreatedAt)
                  .Select(s =>
                  {
-                     var candidate = candidates.First(c => c.CandidateId == s.CandidateId);
-                     var recruiter = recruiters.First(r => r.UserId == s.RecruiterId);
-
+                     var candidate = candidates.FirstOrDefault(c => c.CandidateId == s.CandidateId);
+                     var recruiter = recruiters.FirstOrDefault(r => r.UserId == s.RecruiterId);
                      return new CandidateScreeningDto
                      {
                          CompanyId = s.CompanyId,
@@ -467,15 +573,17 @@ string designation)
                          ScreeningStatus = s.ScreeningStatus,
                          Remarks = s.Remarks,
                          ScreeningDate = s.ScreeningDate,
-                         StageId = candidate.StageId,
+                         StageId = candidate?.StageId ?? 0,
 
-                         SeqNo = candidate.SeqNo,
-                         CandidateName = string.IsNullOrEmpty(candidate.LastName)
-                             ? candidate.FirstName
-                             : $"{candidate.FirstName} {candidate.LastName}",
-                         RecruiterName = recruiter.FullName,
-                         Mobile = candidate.Mobile,
-                         ExpectedSalary = candidate.ExpectedSalary
+                         SeqNo = candidate?.SeqNo,
+                         CandidateName = candidate == null ? "" :
+        string.IsNullOrEmpty(candidate.LastName)
+            ? candidate.FirstName
+            : $"{candidate.FirstName} {candidate.LastName}",
+
+                         RecruiterName = recruiter?.FullName ?? "Unknown",
+                         Mobile = candidate?.Mobile,
+                         ExpectedSalary = candidate?.ExpectedSalary
                      };
                  });
 
@@ -532,6 +640,26 @@ string designation)
                 Expected = c.ExpectedSalary
             });
         }
+        public async Task<IEnumerable<InterviewLevelDto>> GetInterviewLevelsAsync(int companyId, int regionId)
+        {
+            var data = await _unitOfWork.Repository<InterviewLevel>()
+                .FindAsync(x =>
+                    x.CompanyId == companyId &&
+                    x.RegionId == regionId &&
+
+                    x.IsActive &&
+                    !x.IsDeleted);
+
+            return data.Select(x => new InterviewLevelDto
+            {
+                InterviewLevelsID = x.InterviewLevelsId,
+                CompanyID = x.CompanyId,
+                RegionID = x.RegionId,
+                InterviewLevels = x.InterviewLevels,
+                IsActive = x.IsActive,
+                UserId = x.UserId
+            });
+        }
         public async Task<bool> SaveCandidateInterviewAsync(CandidateInterviewDto dto)
         {
             using var transaction = await _unitOfWork.BeginTransactionAsync();
@@ -558,18 +686,84 @@ string designation)
 
                 await _unitOfWork.Repository<CandidateInterview>().AddAsync(interview);
 
-                // 🔥 Move candidate to INTERVIEW stage (already stage 3, but ensure)
+                // ================= FETCH CANDIDATE =================
                 var candidateRepo = _unitOfWork.Repository<Candidate>();
                 var candidate = await candidateRepo.GetByIdAsync(dto.CandidateId);
 
                 if (candidate == null)
                     throw new Exception("Candidate not found");
 
-                candidate.StageId = 4; // Interview stage
+                candidate.StageId = 4;
                 candidate.ModifiedAt = DateTime.Now;
                 candidate.ModifiedBy = dto.UserId;
 
                 candidateRepo.Update(candidate);
+
+                // ================= FETCH INTERVIEWER =================
+                var interviewer = await _unitOfWork.Repository<User>()
+                    .GetByIdAsync(dto.InterviewerId);
+
+                if (interviewer == null)
+                    throw new Exception("Interviewer not found");
+
+                // ================= INTERVIEWER EMAIL =================
+                string interviewerSubject =
+                    $"Interview Scheduled – {candidate.FirstName} {candidate.LastName}";
+
+                string interviewerBody = $@"
+<h2>Interview Scheduled</h2>
+<p>Dear {interviewer.FullName},</p>
+
+<p>An interview has been scheduled with the candidate.</p>
+
+<table>
+<tr><td><b>Candidate</b></td><td>{candidate.FirstName} {candidate.LastName}</td></tr>
+<tr><td><b>Level</b></td><td>{dto.LevelNo}</td></tr>
+<tr><td><b>Date</b></td><td>{dto.InterviewDate:yyyy-MM-dd HH:mm}</td></tr>
+<tr><td><b>Location</b></td><td>{dto.Location}</td></tr>
+<tr><td><b>Meeting Link</b></td><td>{dto.MeetingLink}</td></tr>
+</table>
+
+<p>Please attend the interview.</p>";
+
+                // ================= CANDIDATE EMAIL =================
+                string candidateSubject = "Your Interview Has Been Scheduled";
+
+                string candidateBody = $@"
+<h2>Interview Scheduled</h2>
+
+<p>Dear {candidate.FirstName},</p>
+
+<p>Your interview has been scheduled.</p>
+
+<table>
+<tr><td><b>Interviewer</b></td><td>{interviewer.FullName}</td></tr>
+<tr><td><b>Date</b></td><td>{dto.InterviewDate:yyyy-MM-dd HH:mm}</td></tr>
+<tr><td><b>Location</b></td><td>{dto.Location}</td></tr>
+<tr><td><b>Meeting Link</b></td><td>{dto.MeetingLink}</td></tr>
+</table>
+
+<p>Best Regards,<br/>HR Team</p>";
+
+                // ================= SEND EMAILS =================
+
+                if (!string.IsNullOrEmpty(interviewer.Email))
+                {
+                    await _emailService.SendEmailAsync(
+                        interviewer.Email,
+                        interviewerSubject,
+                        interviewerBody
+                    );
+                }
+
+                if (!string.IsNullOrEmpty(candidate.Email))
+                {
+                    await _emailService.SendEmailAsync(
+                        candidate.Email,
+                        candidateSubject,
+                        candidateBody
+                    );
+                }
 
                 await _unitOfWork.CompleteAsync();
                 await transaction.CommitAsync();
@@ -583,14 +777,16 @@ string designation)
             }
         }
 
-        public async Task<IEnumerable<CandidateInterviewDto>> GetInterviewRecordsAsync(int userId,
-    int companyId,
-    int regionId)
+        public async Task<IEnumerable<CandidateInterviewDto>> GetInterviewRecordsAsync(
+     int userId,
+     int companyId,
+     int regionId)
         {
             var interviews = await _unitOfWork.Repository<CandidateInterview>()
                 .FindAsync(x =>
                     x.CompanyId == companyId &&
-                    x.RegionId == regionId
+                    x.RegionId == regionId &&
+                    x.UserId == userId
                 );
 
             if (!interviews.Any())
@@ -598,6 +794,7 @@ string designation)
 
             var candidateIds = interviews.Select(x => x.CandidateId).Distinct().ToList();
             var interviewerIds = interviews.Select(x => x.InterviewerId).Distinct().ToList();
+            var levelIds = interviews.Select(x => x.LevelNo).Distinct().ToList();
 
             var candidates = await _unitOfWork.Repository<Candidate>()
                 .FindAsync(x => candidateIds.Contains(x.CandidateId));
@@ -605,85 +802,177 @@ string designation)
             var interviewers = await _unitOfWork.Repository<User>()
                 .FindAsync(x => interviewerIds.Contains(x.UserId));
 
+            var levels = await _unitOfWork.Repository<InterviewLevel>()
+                .FindAsync(x => levelIds.Contains(x.InterviewLevelsId));
+
             return interviews
-     .OrderByDescending(x => x.CreatedAt)
-     .Select(iv =>
-     {
-         var candidate = candidates.First(c => c.CandidateId == iv.CandidateId);
-         var interviewer = interviewers.First(u => u.UserId == iv.InterviewerId);
+                .OrderByDescending(x => x.CreatedAt)
+                .Select(iv =>
+                {
+                    var candidate = candidates.First(c => c.CandidateId == iv.CandidateId);
+                    var interviewer = interviewers.First(u => u.UserId == iv.InterviewerId);
+                    var level = levels.FirstOrDefault(l => l.InterviewLevelsId == iv.LevelNo);
 
-         return new CandidateInterviewDto
-         {
-             CompanyId = iv.CompanyId,
-             RegionId = iv.RegionId,
-             UserId = iv.UserId,
-             CandidateId = iv.CandidateId,
-             LevelNo = iv.LevelNo,
-             InterviewerId = iv.InterviewerId,
-             InterviewerName = interviewer.FullName,
-             InterviewDate = iv.InterviewDate,
-             Location = iv.Location,
-             MeetingLink = iv.MeetingLink,
-             Description = iv.Description,
-             Result = iv.Result,
-             StageId = candidate.StageId,
+                    return new CandidateInterviewDto
+                    {
+                        InterviewId = iv.InterviewId,
+                        CompanyId = iv.CompanyId,
+                        RegionId = iv.RegionId,
+                        UserId = iv.UserId,
+                        CandidateId = iv.CandidateId,
 
-             SeqNo = candidate.SeqNo,
-             CandidateName = string.IsNullOrEmpty(candidate.LastName)
-                 ? candidate.FirstName
-                 : $"{candidate.FirstName} {candidate.LastName}",
-             Mobile = candidate.Mobile,
+                        LevelNo = iv.LevelNo,
+                        InterviewLevels = level?.InterviewLevels, // 🔥 FIX HERE
 
-             // 🔥 ADD THESE
-             Department = candidate.Department,
-             Designation = candidate.Designation,
-             ExpectedSalary = candidate.ExpectedSalary
-         };
-     });
+                        InterviewerId = iv.InterviewerId,
+                        InterviewerName = interviewer.FullName,
+                        InterviewDate = iv.InterviewDate,
+                        Location = iv.Location,
+                        MeetingLink = iv.MeetingLink,
+                        Description = iv.Description,
+                        Result = iv.Result,
+                        StageId = candidate.StageId,
 
+                        SeqNo = candidate.SeqNo,
+                        CandidateName = string.IsNullOrEmpty(candidate.LastName)
+                            ? candidate.FirstName
+                            : $"{candidate.FirstName} {candidate.LastName}",
+
+                        Mobile = candidate.Mobile,
+                        Department = candidate.Department,
+                        Designation = candidate.Designation,
+                        ExpectedSalary = candidate.ExpectedSalary
+                    };
+                });
         }
+
+
+
+        /// ///appointment
 
 
         public async Task<bool> UpdateCandidateInterviewAsync(CandidateInterviewDto dto)
         {
-            var interview = (await _unitOfWork.Repository<CandidateInterview>()
-                .FindAsync(x =>
-                    x.CompanyId == dto.CompanyId &&
-                    x.RegionId == dto.RegionId &&
-                    x.CandidateId == dto.CandidateId))
-                .OrderByDescending(x => x.CreatedAt)
-                .FirstOrDefault();
+            using var tx = await _unitOfWork.BeginTransactionAsync();
 
-            if (interview == null)
-                return false;
+            try
+            {
+                var interviewRepo = _unitOfWork.Repository<CandidateInterview>();
 
-            interview.LevelNo = dto.LevelNo;
-            interview.InterviewerId = dto.InterviewerId;
-            interview.InterviewerName = dto.InterviewerName;
-            interview.InterviewDate = dto.InterviewDate;
-            interview.Location = dto.Location;
-            interview.MeetingLink = dto.MeetingLink;
-            interview.Description = dto.Description;
-            interview.Result = dto.Result ?? interview.Result;
-            interview.ModifiedAt = DateTime.Now;
-            interview.ModifiedBy = dto.UserId;
+                var interview = await interviewRepo.GetByIdAsync(dto.InterviewId)
+                       ?? throw new Exception("Interview record not found");
 
-            _unitOfWork.Repository<CandidateInterview>().Update(interview);
-            await _unitOfWork.CompleteAsync();
+                //if (dto.LevelNo <= 0)
+                //    throw new Exception("Invalid Interview Level");
 
-            return true;
+                //interview.LevelNo = dto.LevelNo;
+                interview.InterviewerId = dto.InterviewerId;
+                interview.InterviewerName = dto.InterviewerName;
+                interview.InterviewDate = dto.InterviewDate;
+                interview.Location = dto.Location;
+                interview.MeetingLink = dto.MeetingLink;
+
+                interview.Result = dto.Result;
+                interview.Description = dto.Description;
+                interview.ModifiedAt = DateTime.Now;
+                interview.ModifiedBy = dto.UserId;
+
+                interviewRepo.Update(interview);
+
+                // 🔹 Candidate
+                var candidateRepo = _unitOfWork.Repository<Candidate>();
+                var candidate = await candidateRepo.GetByIdAsync(dto.CandidateId)
+                    ?? throw new Exception("Candidate not found");
+
+                // ================= STATUS → STAGE =================
+                if (dto.Result == "Selected")
+                    candidate.StageId = 5;
+                else
+                    candidate.StageId = 4;
+
+                candidate.ModifiedAt = DateTime.Now;
+                candidate.ModifiedBy = dto.UserId;
+                candidateRepo.Update(candidate);
+
+                // ================= EMAILS =================
+
+                // 🔹 HR USERS (RoleId = 4)
+                var hrUsers = await _unitOfWork.Repository<User>()
+                    .FindAsync(u =>
+                        u.RoleId == 4 &&
+                        u.CompanyId == interview.CompanyId &&
+                        u.RegionId == interview.RegionId &&
+                        !string.IsNullOrEmpty(u.Email)
+                    );
+
+                if (string.IsNullOrEmpty(candidate.Email))
+                    throw new Exception("Candidate email not found");
+
+                // ================= HR EMAIL =================
+                string hrSubject = $"Interview Result Updated – {candidate.FirstName} {candidate.LastName}";
+                string hrBody = $@"
+<!DOCTYPE html>
+<html>
+<body style='font-family:Segoe UI'>
+  <h2>Interview Status Updated</h2>
+  <p>Dear HR Team,</p>
+
+  <table>
+    <tr><td><b>Candidate</b></td><td>{candidate.FirstName} {candidate.LastName}</td></tr>
+    <tr><td><b>Level</b></td><td>{interview.LevelNo}</td></tr>
+    <tr><td><b>Status</b></td><td>{dto.Result}</td></tr>
+    <tr><td><b>Description</b></td><td>{dto.Description}</td></tr>
+  </table>
+</body>
+</html>";
+
+                // ✅ Send ONE email to ALL HRs (loop is fine but content same)
+                foreach (var hr in hrUsers)
+                    await _emailService.SendEmailAsync(hr.Email!, hrSubject, hrBody);
+
+                // ================= CANDIDATE EMAIL =================
+                string candidateSubject = $"Interview Result – {candidate.FirstName}";
+                string candidateBody = $@"
+<!DOCTYPE html>
+<html>
+<body style='font-family:Segoe UI'>
+  <h2>Interview Update</h2>
+  <p>Dear {candidate.FirstName},</p>
+
+  <p>Your interview result has been updated:</p>
+
+  <table>
+    <tr><td><b>Level</b></td><td>{interview.LevelNo}</td></tr>
+    <tr><td><b>Status</b></td><td>{dto.Result}</td></tr>
+    <tr><td><b>Description</b></td><td>{dto.Description}</td></tr>
+  </table>
+
+  <p>Regards,<br/>HR Team</p>
+</body>
+</html>";
+
+                await _emailService.SendEmailAsync(candidate.Email, candidateSubject, candidateBody);
+
+                // ❌ NO INTERVIEWER EMAIL
+
+                await _unitOfWork.CompleteAsync();
+                await tx.CommitAsync();
+
+                return true;
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
         }
-        public async Task<IEnumerable<CandidateAppointmentDto>> GetAppointmentsForInterviewerAsync(
-    int companyId,
-    int regionId,
-    int interviewerId)
+        public async Task<IEnumerable<CandidateAppointmentDto>> GetAppointmentsForInterviewerAsync(int interviewerId)
         {
-            // 🔹 Only interviews assigned to this interviewer
             var interviews = await _unitOfWork.Repository<CandidateInterview>()
                 .FindAsync(x =>
-                    x.CompanyId == companyId &&
-                    x.RegionId == regionId &&
-                    x.InterviewerId == interviewerId
+
+                    x.InterviewerId == interviewerId &&
+                    x.Result == "Pending"   // 🔥 hide processed ones
                 );
 
             if (!interviews.Any())
@@ -691,18 +980,15 @@ string designation)
 
             var candidateIds = interviews.Select(x => x.CandidateId).Distinct().ToList();
 
-            // 🔹 Only StageId = 4 candidates
             var candidates = await _unitOfWork.Repository<Candidate>()
-                .FindAsync(x =>
-                    candidateIds.Contains(x.CandidateId) &&
-                    x.StageId == 4
-                );
+                .FindAsync(x => candidateIds.Contains(x.CandidateId));
 
             return interviews
                 .OrderByDescending(x => x.InterviewDate)
                 .Select(iv =>
                 {
-                    var candidate = candidates.First(c => c.CandidateId == iv.CandidateId);
+                    var candidate = candidates.FirstOrDefault(c => c.CandidateId == iv.CandidateId);
+                    if (candidate == null) return null;
 
                     return new CandidateAppointmentDto
                     {
@@ -712,10 +998,13 @@ string designation)
                         InterviewDate = iv.InterviewDate,
                         Designation = candidate.Designation,
                         Location = iv.Location,
-                        Description = iv.Description
+                        Description = iv.Description,
+
                     };
-                });
+                })
+                .Where(x => x != null)!;
         }
+
 
         public async Task<object?> GetAppointmentCandidateDetailsAsync(int candidateId)
         {
@@ -734,8 +1023,8 @@ string designation)
                 candidate.Gender,
                 candidate.Mobile,
                 Expected = candidate.ExpectedSalary,
-                Status = candidate.StageId, // you can map this in UI
-                DateToJoin = DateTime.Now.AddDays(15) // or null if not stored
+                Status = candidate.StageId,
+                DateToJoin = DateTime.Now.AddDays(15)
             };
         }
     }
