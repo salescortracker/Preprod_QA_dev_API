@@ -20,11 +20,14 @@ namespace BusinessLayer.DTOs
         public int createdBy { get; set; }
         public string companyName { get; set; }
         public string regionName { get; set; }
+        public string departmentName { get; set; }
     }
     public class CreateUpdateDesignationDto
     {
         public int CompanyID { get; set; }
         public int RegionID { get; set; }
+        public int? DepartmentID { get; set; }
+
         [Required, MaxLength(100)]
         public string DesignationName { get; set; } = string.Empty;
         [MaxLength(250)]
