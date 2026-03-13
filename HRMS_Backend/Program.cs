@@ -89,6 +89,7 @@ builder.Services.AddScoped<ISalaryStructureService, SalaryStructureService>();
 builder.Services.AddScoped<IEmployeeSalaryService, EmployeeSalaryService>();
 builder.Services.AddScoped<IPayrollService, PayrollService>();
 builder.Services.AddScoped<IEventService, EventService>();
+builder.Services.AddScoped<IEmploymentTypeService, EmploymentTypeService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -99,7 +100,7 @@ if (app.Environment.IsDevelopment())
 }
 // --------------------
 // 4️⃣ Use CORS
-// --------------------
+// --------------
 app.UseCors(corsPolicyName);
 app.UseHttpsRedirection();
 // 🔹 Enable static files (wwwroot)
