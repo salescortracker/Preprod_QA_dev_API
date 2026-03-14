@@ -351,10 +351,13 @@ namespace BusinessLayer.Implementations
         /// 
         /// </summary>
         /// <returns></returns>
-        public async Task<IEnumerable<ModeOfStudyDto>> GetModeOfStudyListAsync()
+        public async Task<IEnumerable<ModeOfStudyDto>> GetModeOfStudyListAsync(int companyId, int regionId)
         {
             return await _context.ModeOfStudies
-                .Where(x => x.IsActive)
+                .Where(x => x.IsActive
+                            && !x.IsDeleted
+                            && x.CompanyId == companyId
+                            && x.RegionId == regionId)
                 .Select(x => new ModeOfStudyDto
                 {
                     ModeOfStudyId = x.ModeOfStudyId,

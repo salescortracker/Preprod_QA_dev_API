@@ -18,7 +18,7 @@ namespace BusinessLayer.Interfaces
         Task<bool> updateEmpEduAsync(EmployeeEducationDto model);
         Task<bool> deleteEmpEduAsync(int educationId);
         Task<IEnumerable<EmployeeEducationDto>> getAllEmpEduAsync();
-        Task<IEnumerable<ModeOfStudyDto>> GetModeOfStudyListAsync();
+        Task<IEnumerable<ModeOfStudyDto>> GetModeOfStudyListAsync(int companyId, int regionId);
 
         Task<IEnumerable<EmployeeJobHistoryDto>> getAllempJobAsync();
         Task<IEnumerable<EmployeeJobHistoryDto>> getByUserIdEmpJobAsync(int userId);
