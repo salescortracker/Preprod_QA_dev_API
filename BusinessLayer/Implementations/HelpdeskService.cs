@@ -72,7 +72,7 @@ namespace BusinessLayer.Implementations
 
                 if (dept != null)
                 {
-                    departmentName = dept.Description; // 🔴 change this to your real column
+                    departmentName = dept.DepartmentName; // 🔴 change this to your real column
                 }
             }
 

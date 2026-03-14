@@ -124,7 +124,7 @@ namespace BusinessLayer.Implementations
         employeeCode = u.EmployeeCode,
 
         DepartmentId = u.DepartmentId,
-        DepartmentName = d.Description, // 🔥 STRING
+        DepartmentName = d.DepartmentName, // 🔥 STRING
 
         ReportingManagerId = u.ReportingTo,
         ReportingManagerName = rm.FullName, // 🔥 STRING
